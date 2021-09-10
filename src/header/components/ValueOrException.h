@@ -29,7 +29,7 @@ namespace flw {
 			this->reset(args...);
 		};
 
-		void reset(T* newValue) {
+		void reset(T* newValue = nullptr) {
 			this->value.reset(newValue);
 		};
 
@@ -38,6 +38,10 @@ namespace flw {
 			this->value.reset();
 			try {
 				this->value = std::make_unique<T>(args...);
+			}
+			catch (const Error& e) {
+				this->value.reset();
+				this->exception = std::make_exception_ptr(e);
 			}
 			catch (const std::exception & e) {
 				this->value.reset();
@@ -48,7 +52,7 @@ namespace flw {
 		inline bool isValue() const { return (nullptr != this->value); };
 		inline bool isException() const { return (nullptr != this->exception); };
 
-		inline std::exception_ptr extractException() {
+		inline std::exception_ptr getException() {
 			return this->exception;
 		};
 
