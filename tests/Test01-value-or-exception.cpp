@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <components/ValueOrException.h>
+#include <components/ValueOrException.hpp>
 #include <sstream>
 
 TEST(ValueOrException, nullptr_comparison) {

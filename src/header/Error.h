@@ -15,9 +15,7 @@ namespace flw {
 	 */
     class Error : public std::runtime_error {
     public:
-        inline Error(const std::string& what) 
-            : std::runtime_error(what) { 
-        };
+        Error(const std::string& what);
     };
 }
 

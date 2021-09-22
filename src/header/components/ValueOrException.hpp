@@ -56,18 +56,12 @@ namespace flw {
 			return this->exception;
 		};
 
-		[[nodiscard]] const T& get() const {
-			if (nullptr == this->value) {
-				throw Error("Value non dereferenciable");
-			}
-			return *this->value;
+		[[nodiscard]] const T* get() const {
+			return this->value.get();
 		};
 
-		[[nodiscard]] T& get() {
-			if (nullptr == this->value) {
-				throw Error("Value non dereferenciable");
-			}
-			return *this->value;
+		[[nodiscard]] T* get() {
+			return this->value.get();
 		};
 
 	private:
