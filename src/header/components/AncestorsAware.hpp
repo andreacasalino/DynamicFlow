@@ -16,7 +16,7 @@ namespace flw {
     template<std::size_t Position, typename T>
     class AncestorAware {
     public:
-        ValueAware<T>* ancestor = nullptr;
+        const ValueAware<T>* ancestor = nullptr;
     };
 
     template<std::size_t Position, typename ... Ts>
@@ -36,8 +36,8 @@ namespace flw {
         : public AncestorsAwareRecurr<0, Ts...> {
     public:
         template<typename ... Values>
-        AncestorsAware(Values ... values) {
-            //bind<0, Values...>(values...);
+        AncestorsAware(const Values& ... values) {
+            bind<0, Values...>(values...);
         };
 
         template<std::size_t Index>
@@ -51,16 +51,16 @@ namespace flw {
         }
 
     private:
-        template<std::size_t Index, typename ... Values>
-        void bind(ValueAware<TypeExtractor<Index, Ts...>::Type>& value, Values ... values) {
-            //bind<Position, Value>(value);
-            //bind<Position +1, Values...>(values...);
+        template<std::size_t Index, typename Value, typename ... Values>
+        void bind(const Value& value, const Values& ... values) {
+            bind<Index, Value>(value);
+            bind<Index +1, Values...>(values...);
         };
 
-        template<std::size_t Position>
-        void bind(ValueAware<TypeExtractor<Index, Ts...>::Type>& value) {
-            //auto& ancestor = getAncestorAware<Position>();
-            //ancestor.ancestor = &value;
+        template<std::size_t Index, typename Value>
+        void bind(const Value& value) {
+            auto& ancestor = getAncestorAware<Index>();
+            ancestor.ancestor = &value;
         };
     };
 
