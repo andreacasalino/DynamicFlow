@@ -36,34 +36,33 @@ namespace flw {
         : public AncestorsAwareRecurr<0, Ts...> {
     public:
         template<typename ... Values>
-        AncestorsAware(const Values& ... values) {
-            bind<0, Values...>(values...);
+        AncestorsAware(const Values& ... ancestors) {
+            bind<0, Values...>(ancestors...);
         };
 
         template<std::size_t Index>
-        auto& getAncestorAware() {
-            return static_cast<AncestorAware<Index, TypeExtractor<Index, Ts...>::Type >&>(*this);
+        auto& getAncestor() {
+            return static_cast<AncestorAware<Index, typename TypeExtractor<Index, Ts...>::Type >&>(*this);
         }
 
         template<std::size_t Index>
-        const auto& getAncestorAware() const {
-            return static_cast<const AncestorAware<Index, TypeExtractor<Index, Ts...>::Type >&>(*this);
+        const auto& getAncestor() const {
+            return static_cast<const AncestorAware<Index, typename TypeExtractor<Index, Ts...>::Type >&>(*this);
         }
 
     private:
         template<std::size_t Index, typename Value, typename ... Values>
         void bind(const Value& value, const Values& ... values) {
             bind<Index, Value>(value);
-            bind<Index +1, Values...>(values...);
+            bind<Index + 1, Values...>(values...);
         };
 
         template<std::size_t Index, typename Value>
         void bind(const Value& value) {
-            auto& ancestor = getAncestorAware<Index>();
+            auto& ancestor = getAncestor<Index>();
             ancestor.ancestor = &value;
         };
     };
-
 }
 
 #endif
