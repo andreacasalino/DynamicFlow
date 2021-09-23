@@ -16,7 +16,7 @@ namespace flw {
     template<typename T>
     class ValueAware {
     public:
-        std::mutex valueMtx;
+        mutable std::mutex valueMtx;
         ValueOrException<T> value;
 
     protected:

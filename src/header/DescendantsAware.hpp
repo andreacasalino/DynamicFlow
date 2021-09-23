@@ -8,13 +8,16 @@
 #ifndef FLOW_DESCENDANTS_AWARE_H
 #define FLOW_DESCENDANTS_AWARE_H
 
-#include <components/ValueAware.hpp>
+#include <components/EvaluateCapable.h>
+#include <list>
 
 namespace flw {
 
-    template<typename ... Inputs>
     class DescendantsAware {
     protected:
+        DescendantsAware() = default;
+
+        std::list<EvaluateCapable*> descendants;
     };
 
 }

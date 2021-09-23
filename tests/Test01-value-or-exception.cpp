@@ -1,3 +1,10 @@
+/**
+ * Author:    Andrea Casalino
+ * Created:   10.09.2021
+ *
+ * report any bug to andrecasa91@gmail.com.
+ **/
+
 #include <gtest/gtest.h>
 #include <components/ValueOrException.hpp>
 #include <sstream>
@@ -47,13 +54,13 @@ TEST(ValueOrException, constructors) {
 	{
 		StringOrExc value(new String(expected_message));
 		EXPECT_FALSE(nullptr == value);
-		EXPECT_TRUE(expected_message.compare(value.get().getMex()) == 0);
+		EXPECT_TRUE(expected_message.compare(value.get()->getMex()) == 0);
 	}
 
 	{
 		StringOrExc value(expected_message_part_a, expected_message_part_b);
 		EXPECT_FALSE(nullptr == value);
-		EXPECT_TRUE(expected_message.compare(value.get().getMex()) == 0);
+		EXPECT_TRUE(expected_message.compare(value.get()->getMex()) == 0);
 	}
 }
 
@@ -64,15 +71,15 @@ TEST(ValueOrException, reset) {
 
 	StringOrExc value(expected_message_part_a);
 	EXPECT_FALSE(nullptr == value);
-	EXPECT_TRUE(expected_message_part_a.compare(value.get().getMex()) == 0);
+	EXPECT_TRUE(expected_message_part_a.compare(value.get()->getMex()) == 0);
 
 	value.reset(expected_message_part_b);
 	EXPECT_FALSE(nullptr == value);
-	EXPECT_TRUE(expected_message_part_b.compare(value.get().getMex()) == 0);
+	EXPECT_TRUE(expected_message_part_b.compare(value.get()->getMex()) == 0);
 
 	value.reset(expected_message_part_a, expected_message_part_b);
 	EXPECT_FALSE(nullptr == value);
-	EXPECT_TRUE(expected_message.compare(value.get().getMex()) == 0);
+	EXPECT_TRUE(expected_message.compare(value.get()->getMex()) == 0);
 
 	value.reset();
 	EXPECT_TRUE(nullptr == value);

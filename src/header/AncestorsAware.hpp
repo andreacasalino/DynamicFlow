@@ -35,11 +35,6 @@ namespace flw {
     class AncestorsAware
         : public AncestorsAwareRecurr<0, Ts...> {
     public:
-        template<typename ... Values>
-        AncestorsAware(const Values& ... ancestors) {
-            bind<0, Values...>(ancestors...);
-        };
-
         template<std::size_t Index>
         auto& getAncestor() {
             return static_cast<AncestorAware<Index, typename TypeExtractor<Index, Ts...>::Type >&>(*this);
@@ -49,6 +44,12 @@ namespace flw {
         const auto& getAncestor() const {
             return static_cast<const AncestorAware<Index, typename TypeExtractor<Index, Ts...>::Type >&>(*this);
         }
+
+    protected:
+        template<typename ... Values>
+        AncestorsAware(const Values& ... ancestors) {
+            bind<0, Values...>(ancestors...);
+        };
 
     private:
         template<std::size_t Index, typename Value, typename ... Values>
