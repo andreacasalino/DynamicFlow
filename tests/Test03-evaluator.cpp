@@ -15,8 +15,9 @@ class EvaluatorTest
     : public flw::Evaluator<Ts...> {
 public:
     template<typename ... Values>
-    EvaluatorTest(const Values& ... ancestors)
-        : flw::Evaluator<Ts...>(ancestors...) {
+    EvaluatorTest(const std::function<void(const Ts & ...)>& evaluation, const Values& ... ancestors)
+        : flw::Evaluator<Ts...>(evaluation) {
+        bind(ancestors...);
     };
 };
 

@@ -58,11 +58,9 @@ namespace flw {
 
     protected:
         template<typename ... Values>
-        Evaluator(const std::function<void(const Ts & ...)>& evaluation, const Values& ... ancestors)
-            : AncestorsAware<Ts...>(ancestors...)
-            , evaluation(evaluation) {
+        Evaluator(const std::function<void(const Ts & ...)>& evaluation)
+            : evaluation(evaluation) {
         };
-
 
     private:
         const std::function<void(const Ts & ...)> evaluation;

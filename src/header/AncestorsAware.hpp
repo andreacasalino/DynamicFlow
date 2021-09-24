@@ -46,8 +46,10 @@ namespace flw {
         }
 
     protected:
+        AncestorsAware() = default;
+
         template<typename ... Values>
-        AncestorsAware(const Values& ... ancestors) {
+        void bind(const Values& ... ancestors) {
             bind<0, Values...>(ancestors...);
         };
 

@@ -8,19 +8,21 @@
 #ifndef FLOW_SOURCE_H
 #define FLOW_SOURCE_H
 
-#include <components/ValueAware.hpp>
-#include <components/DescendantsAware.hpp>
+#include <ValueUser.hpp>
+#include <DescendantsAware.hpp>
 
 namespace flw {
 
     template<typename T>
     class Source
-        : private ValueAware<T>
+        : public ValueUser<T>
         , public DescendantsAware {
     public:
-        Source();
+        template<typename ... Args>
+        void reset(Args ... args);
 
-        void update(std::unique_ptr<T> newValue);
+    protected:
+        Source() = default;
     };
 
 }

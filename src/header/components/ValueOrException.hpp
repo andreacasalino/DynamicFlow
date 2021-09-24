@@ -29,6 +29,10 @@ namespace flw {
 			this->reset(args...);
 		};
 
+		ValueOrException(const std::exception_ptr& exception) {
+			this->exception = exception;
+		};
+
 		void reset(T* newValue = nullptr) {
 			this->value.reset(newValue);
 		};
@@ -36,6 +40,7 @@ namespace flw {
 		template<typename ... Args>
 		void reset(Args ... args) {
 			this->value.reset();
+			exception = std::exception_ptr();
 			try {
 				this->value = std::make_unique<T>(args...);
 			}
@@ -52,7 +57,7 @@ namespace flw {
 		inline bool isValue() const { return (nullptr != this->value); };
 		inline bool isException() const { return (nullptr != this->exception); };
 
-		inline std::exception_ptr getException() {
+		inline std::exception_ptr getException() const {
 			return this->exception;
 		};
 
