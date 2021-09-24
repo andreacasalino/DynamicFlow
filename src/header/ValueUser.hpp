@@ -14,7 +14,7 @@ namespace flw {
 
     template<typename T>
     class ValueUser
-        : public ValueAware<T> {
+        : virtual public ValueAware<T> {
     public:
         ValueOrException<bool> useValue(const std::function<void(const T&)>& action) const {
             std::lock_guard<std::mutex> lock(valueMtx);

@@ -47,13 +47,14 @@ namespace flw {
         }
     };
 
-    template<typename ... Ts>
+    template<typename T, typename ... Ts>
     class Evaluator
-        : public AncestorsAware<Ts...>
+        : virtual public ValueAware<T>
+        , public AncestorsAware<Ts...>
         , public EvaluateCapable {
     public:
         EvaluationResult evaluate() override {
-            return EvaluatorRecurr <0, std::function<void(const Ts & ...)>, Evaluator<Ts...>, Ts...>::evaluate(evaluation, *this);
+            return EvaluatorRecurr <0, std::function<void(const Ts & ...)>, Evaluator<T, Ts...>, Ts...>::evaluate(evaluation, *this);
         }
 
     protected:

@@ -18,13 +18,13 @@ namespace flw {
     class Node
         : public ValueUser<T>
         , public DescendantsAware
-        , public Evaluator<Ts...> {
+        , public Evaluator<T, Ts...> {
     public:
 
     protected:
         template<typename ... Values>
         Node(const std::function<void(const Ts & ...)>& evaluation, const Values& ... ancestors) 
-            : Evaluator<Ts...>(evaluation) {
+            : Evaluator<T, Ts...>(evaluation) {
             bind(ancestors...);
             subscribe(ancestors...);
         };

@@ -10,13 +10,13 @@
 #include <Evaluator.hpp>
 #include <string>
 
-template<typename ... Ts>
+template<typename T, typename ... Ts>
 class EvaluatorTest
-    : public flw::Evaluator<Ts...> {
+    : public flw::Evaluator<T, Ts...> {
 public:
     template<typename ... Values>
     EvaluatorTest(const std::function<void(const Ts & ...)>& evaluation, const Values& ... ancestors)
-        : flw::Evaluator<Ts...>(evaluation) {
+        : flw::Evaluator<T, Ts...>(evaluation) {
         bind(ancestors...);
     };
 };
@@ -27,7 +27,7 @@ TEST(Evaluator, evaluation_not_ready_expected) {
     ValueAwareTest<int> val2;
 
     bool something_was_done = false;
-    EvaluatorTest<int, float, int> sample([&something_was_done](const int& in0, const float& in1, const int& in2) {
+    EvaluatorTest<int, int, float, int> sample([&something_was_done](const int& in0, const float& in1, const int& in2) {
         something_was_done = true;
         }, val0, val1, val2);
 
@@ -53,7 +53,7 @@ TEST(Evaluator, evaluation_success_expected) {
     val2.value.reset(5);
 
     bool something_was_done = false;
-    EvaluatorTest<int, float, int> sample([&something_was_done](const int& in0, const float& in1, const int& in2) {
+    EvaluatorTest<int, int, float, int> sample([&something_was_done](const int& in0, const float& in1, const int& in2) {
         something_was_done = true;
         }, val0, val1, val2);
 
@@ -78,7 +78,7 @@ TEST(Evaluator, evaluation_exception_expected) {
     val2.value.reset(5);
 
     bool something_was_done = false;
-    EvaluatorTest<int, Dummy, int> sample([&something_was_done](const int& in0, const Dummy& in1, const int& in2) {
+    EvaluatorTest<int, int, Dummy, int> sample([&something_was_done](const int& in0, const Dummy& in1, const int& in2) {
         something_was_done = true;
         }, val0, val1, val2);
 
