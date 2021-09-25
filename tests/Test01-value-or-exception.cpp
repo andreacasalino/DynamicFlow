@@ -14,7 +14,7 @@ TEST(ValueOrException, nullptr_comparison) {
     EXPECT_EQ(nullptr, flw::ValueOrException<int>());
 
     flw::ValueOrException<int> value;
-    value.reset(new int(0));
+    value.reset(std::make_unique<int>(0));
     EXPECT_FALSE(nullptr == value);
     EXPECT_FALSE(value == nullptr);
 }
@@ -52,13 +52,13 @@ TEST(ValueOrException, constructors) {
 	const std::string expected_message = merge(expected_message_part_a, expected_message_part_b);
 
 	{
-		StringOrExc value(new String(expected_message));
+		StringOrExc value(std::make_unique<String>(expected_message));
 		EXPECT_FALSE(nullptr == value);
 		EXPECT_TRUE(expected_message.compare(value.get()->getMex()) == 0);
 	}
 
 	{
-		StringOrExc value(expected_message_part_a, expected_message_part_b);
+		StringOrExc value(std::make_unique<String>(expected_message_part_a, expected_message_part_b));
 		EXPECT_FALSE(nullptr == value);
 		EXPECT_TRUE(expected_message.compare(value.get()->getMex()) == 0);
 	}
@@ -69,15 +69,15 @@ TEST(ValueOrException, reset) {
 	const std::string expected_message_part_b = "omString";
 	const std::string expected_message = merge(expected_message_part_a, expected_message_part_b);
 
-	StringOrExc value(expected_message_part_a);
+	StringOrExc value(std::make_unique<String>(expected_message_part_a));
 	EXPECT_FALSE(nullptr == value);
 	EXPECT_TRUE(expected_message_part_a.compare(value.get()->getMex()) == 0);
 
-	value.reset(expected_message_part_b);
+	value.reset(std::make_unique<String>(expected_message_part_b));
 	EXPECT_FALSE(nullptr == value);
 	EXPECT_TRUE(expected_message_part_b.compare(value.get()->getMex()) == 0);
 
-	value.reset(expected_message_part_a, expected_message_part_b);
+	value.reset(std::make_unique<String>(expected_message_part_a, expected_message_part_b));
 	EXPECT_FALSE(nullptr == value);
 	EXPECT_TRUE(expected_message.compare(value.get()->getMex()) == 0);
 
@@ -86,7 +86,13 @@ TEST(ValueOrException, reset) {
 }
 
 TEST(ValueOrException, exception) {
-	StringOrExc value("");
+	StringOrExc value;
+	try {
+		std::unique_ptr<String> temp = std::make_unique<String>("");
+	}
+	catch (const flw::Error& e) {
+		value.reset(std::make_exception_ptr(e));
+	}
 	EXPECT_TRUE(nullptr == value);
 	EXPECT_TRUE(value.isException());
 

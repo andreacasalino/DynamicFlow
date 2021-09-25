@@ -8,22 +8,21 @@
 #ifndef FLOW_NODE_H
 #define FLOW_NODE_H
 
-#include <ValueUser.hpp>
-#include <DescendantsAware.hpp>
-#include <Evaluator.hpp>
+#include <components/ValueStorer.hpp>
+#include <components/DescendantsAware.hpp>
+#include <components/Evaluator.hpp>
 
 namespace flw {
 
     template<typename T, typename ... Ts>
     class Node
-        : public ValueUser<T>
-        , public DescendantsAware
+        : public DescendantsAware
         , public Evaluator<T, Ts...> {
     public:
 
     protected:
         template<typename ... Values>
-        Node(const std::function<void(const Ts & ...)>& evaluation, const Values& ... ancestors) 
+        Node(const std::function<T(const Ts & ...)>& evaluation, const Values& ... ancestors) 
             : Evaluator<T, Ts...>(evaluation) {
             bind(ancestors...);
             subscribe(ancestors...);

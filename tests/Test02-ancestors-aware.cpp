@@ -6,8 +6,8 @@
  **/
 
 #include <gtest/gtest.h>
-#include "ValueAwareTest.hpp"
-#include <AncestorsAware.hpp>
+#include "ValueStorerTest.hpp"
+#include <components/AncestorsAware.hpp>
 #include <string>
 
 template<typename ... Ts>
@@ -21,9 +21,9 @@ public:
 };
 
 TEST(AncestorsAware, triple_bind_check) {
-    ValueAwareTest<int> val0;
-    ValueAwareTest<float> val1;
-    ValueAwareTest<int> val2;
+    ValueStorerTest<int> val0;
+    ValueStorerTest<float> val1;
+    ValueStorerTest<int> val2;
 
     AncestorsAwareTest<int, float, int> sample(val0, val1, val2);
 
@@ -44,10 +44,10 @@ TEST(AncestorsAware, triple_bind_check) {
 }
 
 TEST(AncestorsAware, quadruple_bind_check) {
-    ValueAwareTest<int> val0;
-    ValueAwareTest<float> val1;
-    ValueAwareTest<int> val2;
-    ValueAwareTest<std::string> val3;
+    ValueStorerTest<int> val0;
+    ValueStorerTest<float> val1;
+    ValueStorerTest<int> val2;
+    ValueStorerTest<std::string> val3;
 
     AncestorsAwareTest<int, float, int, std::string> sample(val0, val1, val2, val3);
 

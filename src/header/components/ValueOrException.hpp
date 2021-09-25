@@ -5,8 +5,8 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#ifndef FLOW_VALUE_H
-#define FLOW_VALUE_H
+#ifndef FLOW_VALUE_OR_EXCEPTION_H
+#define FLOW_VALUE_OR_EXCEPTION_H
 
 #include <Error.h>
 #include <memory>
@@ -20,38 +20,22 @@ namespace flw {
 		 */
 		ValueOrException() = default;
 
-		ValueOrException(T* rawValue) {
-			this->reset(rawValue);
+		ValueOrException(std::unique_ptr<T> newValue) {
+			this->reset(std::move(newValue));
 		}
 
-		template<typename ... Args>
-		ValueOrException(Args ... args) {
-			this->reset(args...);
+		void reset(std::unique_ptr<T> newValue = nullptr) {
+			this->exception = std::exception_ptr();
+			this->value = std::move(newValue);
 		};
 
 		ValueOrException(const std::exception_ptr& exception) {
+			this->reset(exception);
+		};
+
+		void reset(const std::exception_ptr& exception) {
 			this->exception = exception;
-		};
-
-		void reset(T* newValue = nullptr) {
-			this->value.reset(newValue);
-		};
-
-		template<typename ... Args>
-		void reset(Args ... args) {
 			this->value.reset();
-			exception = std::exception_ptr();
-			try {
-				this->value = std::make_unique<T>(args...);
-			}
-			catch (const Error& e) {
-				this->value.reset();
-				this->exception = std::make_exception_ptr(e);
-			}
-			catch (const std::exception & e) {
-				this->value.reset();
-				this->exception = std::make_exception_ptr(e);
-			}
 		};
 
 		inline bool isValue() const { return (nullptr != this->value); };

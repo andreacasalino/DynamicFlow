@@ -13,7 +13,7 @@ namespace flw {
     enum EvaluationResult {
         SUCCESS,
         NOT_READY,
-        EXCEPTION
+        BLOCKING_EXCEPTION
     };
 
     class EvaluateCapable {

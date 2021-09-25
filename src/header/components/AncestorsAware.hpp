@@ -8,7 +8,7 @@
 #ifndef FLOW_ANCESTORS_AWARE_H
 #define FLOW_ANCESTORS_AWARE_H
 
-#include <components/ValueAware.hpp>
+#include <components/ValueStorer.hpp>
 #include <components/TypeExtractor.hpp>
 
 namespace flw {
@@ -16,7 +16,7 @@ namespace flw {
     template<std::size_t Position, typename T>
     class AncestorAware {
     public:
-        const ValueAware<T>* ancestor = nullptr;
+        const ValueStorer<T>* ancestor = nullptr;
     };
 
     template<std::size_t Position, typename ... Ts>

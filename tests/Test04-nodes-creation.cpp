@@ -22,14 +22,14 @@ class NodeTest
     : public flw::Node<T, Ts...> {
 public:
     template<typename ... Values>
-    NodeTest(const std::function<void(const Ts & ...)>& evaluation, const Values& ... ancestors)
+    NodeTest(const std::function<T(const Ts & ...)>& evaluation, const Values& ... ancestors)
         : Node<T, Ts...>(evaluation, ancestors...) {
     };
 };
 
 TEST(SourcesNodes, oneSources_oneNode) {
     SourceTest<int> source;
-    NodeTest<int, int> node([](const int& input) {  }, source);
+    NodeTest<int, int> node([](const int& input) { return 0; }, source);
 
     const auto* anc = node.getAncestor<0>().ancestor;
     EXPECT_EQ(anc, &source);
@@ -40,7 +40,7 @@ TEST(SourcesNodes, oneSources_oneNode) {
 TEST(SourcesNodes, twoSources_oneNode) {
     SourceTest<int> source0;
     SourceTest<float> source1;
-    NodeTest<int, int, float> node([](const int& i1, const float& i2) {}, source0, source1);
+    NodeTest<int, int, float> node([](const int& i1, const float& i2) { return 0; }, source0, source1);
 
     const auto* anc0 = node.getAncestor<0>().ancestor;
     EXPECT_EQ(anc0, &source0);
@@ -58,8 +58,8 @@ TEST(SourcesNodes, twoSources_twoNode) {
     SourceTest<int> source0;
     SourceTest<float> source1;
 
-    NodeTest<int, int, float> node0([](const int& i1, const float& i2) {}, source0, source1);
-    NodeTest<int, int, float> node1([](const int& i1, const float& i2) {}, source0, source1);
+    NodeTest<int, int, float> node0([](const int& i1, const float& i2) { return 0; }, source0, source1);
+    NodeTest<int, int, float> node1([](const int& i1, const float& i2) { return 0; }, source0, source1);
 
     {
         const auto* anc0 = node0.getAncestor<0>().ancestor;

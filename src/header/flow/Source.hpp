@@ -8,14 +8,14 @@
 #ifndef FLOW_SOURCE_H
 #define FLOW_SOURCE_H
 
-#include <ValueUser.hpp>
-#include <DescendantsAware.hpp>
+#include <components/ValueStorer.hpp>
+#include <components/DescendantsAware.hpp>
 
 namespace flw {
 
     template<typename T>
     class Source
-        : public ValueUser<T>
+        : public ValueStorer<T>
         , public DescendantsAware {
     public:
         template<typename ... Args>
