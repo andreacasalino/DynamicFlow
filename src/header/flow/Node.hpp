@@ -18,8 +18,6 @@ namespace flw {
     class Node
         : public DescendantsAware
         , public Evaluator<T, Ts...> {
-    public:
-
     protected:
         template<typename ... Values>
         Node(const std::function<T(const Ts & ...)>& evaluation, const Values& ... ancestors) 
