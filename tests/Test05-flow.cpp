@@ -21,6 +21,7 @@ TEST(Flow, source_search) {
 
     flow.makeSource<int>("source");
     auto source = flow.findSource<int>("source");
+    EXPECT_TRUE(source.getName().compare("source") == 0);
     EXPECT_FALSE(source.isValue());
     EXPECT_FALSE(source.isException());
 }

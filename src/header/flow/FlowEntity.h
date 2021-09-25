@@ -12,7 +12,11 @@
 #include <memory>
 
 namespace flw {
-    using FlowName = std::shared_ptr<const std::string>;
+    class FlowName
+        : public std::shared_ptr<const std::string> {
+    public:
+        FlowName(const std::string& nameRaw);
+    };
 
     inline bool operator<(const FlowName& a, const FlowName& b) {
         return *a.get() < *b.get();
@@ -22,10 +26,10 @@ namespace flw {
     public:
         virtual ~FlowEntity() = default;
 
+        inline FlowName getName() const { return name; }
+
     protected:
         FlowEntity(const std::string& nameRaw);
-
-        inline FlowName getName() const { return name; }
 
     private:
         FlowName name;

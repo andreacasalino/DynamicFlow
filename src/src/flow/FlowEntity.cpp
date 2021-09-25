@@ -9,16 +9,23 @@
 #include <sstream>
 
 namespace flw {
+    FlowName::FlowName(const std::string& nameRaw)
+        : std::shared_ptr<const std::string>(std::make_shared<const std::string>(nameRaw)) {
+    }
+
     static long long unamed_counter = 0;
 
-    FlowEntity::FlowEntity(const std::string& nameRaw) {
+    std::string make_name(const std::string& nameRaw) {
         if (nameRaw.empty()) {
             std::stringstream stream;
             stream << "Unamed-" << unamed_counter;
             ++unamed_counter;
-            name = std::make_shared<const std::string>(stream.str());
-            return;
+            return stream.str();
         }
-        name = std::make_shared<const std::string>(nameRaw);
+        return nameRaw;
+    }
+
+    FlowEntity::FlowEntity(const std::string& nameRaw)
+        : name(make_name(nameRaw)) {
     };
 }

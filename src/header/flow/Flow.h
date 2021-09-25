@@ -36,7 +36,7 @@ namespace flw {
 
         template<typename T>
         SourceHandler<T> findSource(const std::string& name) {
-            auto it = sources.find(std::make_shared<const std::string>(name));
+            auto it = sources.find(name);
             if (it == sources.end()) {
                 throw Error("Inexistent");
             }
@@ -49,7 +49,7 @@ namespace flw {
 
     private:
         void checkName(const std::string& name) {
-            auto it = allTogether.find(std::make_shared<const std::string>(name));
+            auto it = allTogether.find(name);
             if (it != allTogether.end()) {
                 throw Error("Name already reserved");
             }

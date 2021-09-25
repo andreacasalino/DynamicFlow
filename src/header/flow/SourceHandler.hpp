@@ -33,6 +33,10 @@ namespace flw {
             Source<T>* sourcePt = dynamic_cast<Source<T>*>(storer.get());
             sourcePt->reset(args...);
         };
+
+        inline const std::string& getName() const {
+            return *dynamic_cast<FlowEntity*>(this->storer.get())->getName().get();
+        }
     };
 }
 

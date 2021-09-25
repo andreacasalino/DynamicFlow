@@ -27,6 +27,10 @@ namespace flw {
         NodeHandler<T>& operator==(const NodeHandler<T>& o) {
             static_cast<ValueAware<T>&>(*this) = static_cast<const ValueAware<T>&>(o);
         };
+
+        inline const std::string& getName() const {
+            return *dynamic_cast<FlowEntity*>(this->storer.get())->getName().get();
+        }
     };
 
 }
