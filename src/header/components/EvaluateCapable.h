@@ -18,6 +18,8 @@ namespace flw {
 
     class EvaluateCapable {
     public:
+        virtual ~EvaluateCapable() = default;
+
         virtual EvaluationResult evaluate() = 0;
     };
 

@@ -16,6 +16,8 @@ namespace flw {
     template<typename T>
     class ValueStorer {
     public:
+        virtual ~ValueStorer() = default;
+
         mutable std::mutex valueMtx;
         ValueOrException<T> value;
 

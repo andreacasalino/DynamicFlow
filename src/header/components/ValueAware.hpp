@@ -15,6 +15,8 @@ namespace flw {
 	template<typename T>
 	class ValueAware {
 	public:
+        virtual ~ValueAware() = default;
+
 		inline bool isValue() const { return this->storer->value.isValue(); };
 		inline bool isException() const { return this->storer->value.isException(); };
 
@@ -35,12 +37,18 @@ namespace flw {
         }
 
 	protected:
-        ValueAware(const std::shared_ptr<ValueStorer>& storer)
+        ValueAware(const std::shared_ptr<ValueStorer<T>>& storer)
             : storer(storer) {
         };
 
-	private:
-        std::shared_ptr<ValueStorer> storer;
+        ValueAware(const ValueAware<T>& o) 
+            : ValueAware(o.storer) {
+        };
+        ValueAware<T>& operator==(const ValueAware<T>& o) {
+            storer = o.storer;
+        }
+
+        std::shared_ptr<ValueStorer<T>> storer;
 	};
 }
 

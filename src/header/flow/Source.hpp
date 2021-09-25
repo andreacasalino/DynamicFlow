@@ -8,6 +8,7 @@
 #ifndef FLOW_SOURCE_H
 #define FLOW_SOURCE_H
 
+#include <flow/FlowEntity.h>
 #include <components/ValueStorer.hpp>
 #include <components/DescendantsAware.hpp>
 
@@ -15,14 +16,18 @@ namespace flw {
 
     template<typename T>
     class Source
-        : public ValueStorer<T>
+        : public FlowEntity
+        , public ValueStorer<T>
         , public DescendantsAware {
+        friend class Flow;
     public:
         template<typename ... Args>
         void reset(Args ... args);
 
     protected:
-        Source() = default;
+        Source(const std::string& name)
+            : FlowEntity(name) {
+        };
     };
 
 }

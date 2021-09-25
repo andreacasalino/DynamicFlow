@@ -21,6 +21,13 @@ namespace flw {
             : ValueAware<T>(sourceImpl) {
         }
 
+        SourceHandler(const SourceHandler<T>& o) 
+            : ValueAware<T>(0) {
+        };
+        SourceHandler<T>& operator==(const SourceHandler<T>& o) {
+            static_cast<ValueAware<T>&>(*this) = static_cast<const ValueAware<T>&>(o);
+        };
+
         template<typename ... Args>
         void reset(Args ... args) {
             Source<T>* sourcePt = dynamic_cast<Source<T>*>(storer.get());

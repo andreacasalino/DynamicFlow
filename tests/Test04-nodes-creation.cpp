@@ -13,7 +13,8 @@ template<typename T>
 class SourceTest
     : public flw::Source<T> {
 public:
-    SourceTest() {
+    SourceTest()
+        : flw::Source<T>("") {
     };
 };
 
@@ -23,7 +24,7 @@ class NodeTest
 public:
     template<typename ... Values>
     NodeTest(const std::function<T(const Ts & ...)>& evaluation, const Values& ... ancestors)
-        : Node<T, Ts...>(evaluation, ancestors...) {
+        : Node<T, Ts...>("", evaluation, ancestors...) {
     };
 };
 
