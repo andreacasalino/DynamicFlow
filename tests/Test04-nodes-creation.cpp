@@ -24,7 +24,9 @@ class NodeTest
 public:
     template<typename ... Values>
     NodeTest(const std::function<T(const Ts & ...)>& evaluation, const Values& ... ancestors)
-        : Node<T, Ts...>("", evaluation, ancestors...) {
+        : Node<T, Ts...>("", evaluation) {
+        bind(ancestors...);
+        subscribe(ancestors...);
     };
 };
 

@@ -14,6 +14,7 @@ namespace flw {
 
 	template<typename T>
 	class ValueAware {
+        friend class ValueAwareExtractor;
 	public:
         virtual ~ValueAware() = default;
 

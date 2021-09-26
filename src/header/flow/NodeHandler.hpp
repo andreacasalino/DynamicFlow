@@ -22,7 +22,7 @@ namespace flw {
         }
 
         NodeHandler(const NodeHandler<T>& o)
-            : ValueAware<T>(0) {
+            : ValueAware<T>(o) {
         };
         NodeHandler<T>& operator==(const NodeHandler<T>& o) {
             static_cast<ValueAware<T>&>(*this) = static_cast<const ValueAware<T>&>(o);

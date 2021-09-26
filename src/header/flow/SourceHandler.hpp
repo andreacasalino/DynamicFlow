@@ -22,7 +22,7 @@ namespace flw {
         }
 
         SourceHandler(const SourceHandler<T>& o) 
-            : ValueAware<T>(0) {
+            : ValueAware<T>(o) {
         };
         SourceHandler<T>& operator==(const SourceHandler<T>& o) {
             static_cast<ValueAware<T>&>(*this) = static_cast<const ValueAware<T>&>(o);

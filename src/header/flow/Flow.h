@@ -47,6 +47,30 @@ namespace flw {
             return impl;
         };
 
+        template<typename T, typename ... Ts, typename ... Args>
+        NodeHandler<T, Ts...> makeNode(const std::string& name, const std::function<T(const Ts & ...)>& evaluation, const Args& ... handlers) {
+            checkName(name);
+            Node<T, Ts...>* impl = new Node<T, Ts...>(name, evaluation, handlers...);
+            std::shared_ptr<Node<T, Ts...>> node;
+            node.reset(impl);
+            nodes.emplace(node->getName(), node);
+            allTogether.emplace(node->getName(), node);
+            return NodeHandler<T, Ts...>(node);
+        }
+
+        template<typename T, typename ... Ts>
+        NodeHandler<T, Ts...> findNode(const std::string& name) {
+            auto it = nodes.find(name);
+            if (it == nodes.end()) {
+                throw Error("Inexistent");
+            }
+            std::shared_ptr<NodeHandler<T, Ts...>> impl = std::dynamic_pointer_cast<NodeHandler<T, Ts...>, FlowEntity>(it->second);
+            if (nullptr == impl) {
+                throw Error("Wrong type asked");
+            }
+            return impl;
+        };
+
     private:
         void checkName(const std::string& name) {
             auto it = allTogether.find(name);
@@ -54,6 +78,11 @@ namespace flw {
                 throw Error("Name already reserved");
             }
         }
+
+        //template<typename NodeT, typename ... Args>
+        //std::shared_ptr<NodeT> make_node() {
+
+        //}
 
         std::map<FlowName, FlowEntityPtr> sources;
         std::map<FlowName, FlowEntityPtr> nodes;

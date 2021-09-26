@@ -53,7 +53,6 @@ namespace flw {
             bind<0, Values...>(ancestors...);
         };
 
-    private:
         template<std::size_t Index, typename Value, typename ... Values>
         void bind(const Value& value, const Values& ... values) {
             bind<Index, Value>(value);
