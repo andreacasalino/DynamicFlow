@@ -47,6 +47,7 @@ namespace flw {
         };
         ValueAware<T>& operator==(const ValueAware<T>& o) {
             storer = o.storer;
+            return *this;
         }
 
         std::shared_ptr<ValueStorer<T>> storer;

@@ -26,6 +26,7 @@ namespace flw {
         };
         NodeHandler<T>& operator==(const NodeHandler<T>& o) {
             static_cast<ValueAware<T>&>(*this) = static_cast<const ValueAware<T>&>(o);
+            return *this;
         };
 
         inline const std::string& getName() const {

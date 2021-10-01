@@ -26,6 +26,7 @@ namespace flw {
         };
         SourceHandler<T>& operator==(const SourceHandler<T>& o) {
             static_cast<ValueAware<T>&>(*this) = static_cast<const ValueAware<T>&>(o);
+            return *this;
         };
 
         template<typename ... Args>

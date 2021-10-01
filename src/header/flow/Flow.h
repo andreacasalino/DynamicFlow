@@ -64,7 +64,7 @@ namespace flw {
             if (it == nodes.end()) {
                 throw Error("Inexistent");
             }
-            std::shared_ptr<NodeHandler<T, Ts...>> impl = std::dynamic_pointer_cast<NodeHandler<T, Ts...>, FlowEntity>(it->second);
+            std::shared_ptr<Node<T, Ts...>> impl = std::dynamic_pointer_cast<Node<T, Ts...>, FlowEntity>(it->second);
             if (nullptr == impl) {
                 throw Error("Wrong type asked");
             }
@@ -78,11 +78,6 @@ namespace flw {
                 throw Error("Name already reserved");
             }
         }
-
-        //template<typename NodeT, typename ... Args>
-        //std::shared_ptr<NodeT> make_node() {
-
-        //}
 
         std::map<FlowName, FlowEntityPtr> sources;
         std::map<FlowName, FlowEntityPtr> nodes;

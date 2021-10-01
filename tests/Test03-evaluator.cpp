@@ -34,14 +34,17 @@ TEST(Evaluator, evaluation_not_ready_expected) {
 
     EXPECT_FALSE(something_was_done);
     EXPECT_EQ(sample.evaluate(), flw::EvaluationResult::NOT_READY);
+    EXPECT_FALSE(sample.value.isValue());
 
     val0.reset(5);
     EXPECT_FALSE(something_was_done);
     EXPECT_EQ(sample.evaluate(), flw::EvaluationResult::NOT_READY);
+    EXPECT_FALSE(sample.value.isValue());
 
     val1.reset(3.5f);
     EXPECT_FALSE(something_was_done);
     EXPECT_EQ(sample.evaluate(), flw::EvaluationResult::NOT_READY);
+    EXPECT_FALSE(sample.value.isValue());
 }
 
 TEST(Evaluator, evaluation_success_expected) {
@@ -53,14 +56,17 @@ TEST(Evaluator, evaluation_success_expected) {
     val1.reset(3.5f);
     val2.reset(5);
 
+    const std::string expected_result = "done";
     bool something_was_done = false;
-    EvaluatorTest<std::string, int, float, int> sample([&something_was_done](const int& in0, const float& in1, const int& in2) {
+    EvaluatorTest<std::string, int, float, int> sample([&something_was_done, &expected_result](const int& in0, const float& in1, const int& in2) {
         something_was_done = true;
-        return "done";
+        return expected_result;
         }, val0, val1, val2);
 
     EXPECT_EQ(sample.evaluate(), flw::EvaluationResult::SUCCESS);
     EXPECT_TRUE(something_was_done);
+    EXPECT_TRUE(sample.value.isValue());
+    EXPECT_EQ(*sample.value.get(), expected_result);
 }
 
 class Dummy {
@@ -87,6 +93,7 @@ TEST(Evaluator, evaluation_exception_blocking_expected) {
 
     EXPECT_EQ(sample.evaluate(), flw::EvaluationResult::BLOCKING_EXCEPTION);
     EXPECT_FALSE(something_was_done);
+    EXPECT_FALSE(sample.value.isValue());
 }
 
 int main(int argc, char* argv[]) {
