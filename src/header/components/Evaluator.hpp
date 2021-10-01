@@ -18,7 +18,7 @@ namespace flw {
     struct EvaluatorRecurr {
         template<typename ... Args>
         static EvaluationResult evaluate(const FunctionT& evaluation, EvaluatorT& subject, const Args& ... args) {
-            const auto& ancestor = subject.getAncestor<Position>().ancestor;
+            const auto& ancestor = subject.template getAncestor<Position>().ancestor;
             std::lock_guard<std::mutex> lock(ancestor->valueMtx);
             if (ancestor->value.isException()) {
                 return EvaluationResult::BLOCKING_EXCEPTION;
@@ -34,7 +34,7 @@ namespace flw {
     struct EvaluatorRecurr<Position, FunctionT, EvaluatorT, ResultT, T> {
         template<typename ... Args>
         static EvaluationResult evaluate(const FunctionT& evaluation, EvaluatorT& subject, const Args& ... args) {
-            const auto& ancestor = subject.getAncestor<Position>().ancestor;
+            const auto& ancestor = subject.template getAncestor<Position>().ancestor;
             std::lock_guard<std::mutex> lock(ancestor->valueMtx);
             if (ancestor->value.isException()) {
                 return EvaluationResult::BLOCKING_EXCEPTION;
