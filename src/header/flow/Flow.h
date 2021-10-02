@@ -84,7 +84,6 @@ namespace flw {
 
         std::map<FlowName, FlowEntityPtr> allTogether;
     };
-
 }
 
 #endif
