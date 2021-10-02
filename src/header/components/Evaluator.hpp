@@ -61,8 +61,8 @@ namespace flw {
         , public EvaluateCapable {
     public:
         EvaluationResult evaluate() override {
-            std::lock_guard<std::mutex> lock(valueMtx);
-            value.reset();
+            std::lock_guard<std::mutex> lock(ValueStorer<ResultT>::valueMtx);
+            ValueStorer<ResultT>::value.reset();
             return EvaluatorRecurr <0, std::function<ResultT(const Ts & ...)>, Evaluator<ResultT, Ts...>, ResultT, Ts...>::evaluate(evaluation, *this);
         }
 
