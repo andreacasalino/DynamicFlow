@@ -38,25 +38,25 @@ TEST(Flow, source_copy) {
     EXPECT_FALSE(source_copy.isException());
 }
 
-//TEST(Flow, node_creation) {
-//    {
-//        flw::Flow flow;
-//
-//        auto source = flow.makeSource<int>("source");
-//        auto node = flow.makeNode<int, int>("node", [](const int& input) { return input; }, source);
-//    }
-//
-//    {
-//        flw::Flow flow;
-//
-//        auto source1 = flow.makeSource<int>("source1");
-//        auto source2 = flow.makeSource<float>("source2");
-//        auto node = flow.makeNode<int, int, float>("node", [](const int& in1, const float& in2) -> int { return in1; }, source1, source2);
-//
-//        auto node2 = flow.makeNode<int, int, float>("node2", [](const int& in1, const float& in2) -> int { return in1; }, node, source2);
-//    }
-//}
-//
+TEST(Flow, node_creation) {
+    {
+        flw::Flow flow;
+
+        auto source = flow.makeSource<int>("source");
+        auto node = flow.template makeNode<int, int>("node", [](const int& input) { return input; }, source);
+    }
+
+    {
+        flw::Flow flow;
+
+        auto source1 = flow.makeSource<int>("source1");
+        auto source2 = flow.makeSource<float>("source2");
+        auto node = flow.template makeNode<int, int, float>("node", [](const int& in1, const float& in2) -> int { return in1; }, source1, source2);
+
+        auto node2 = flow.template makeNode<int, int, float>("node2", [](const int& in1, const float& in2) -> int { return in1; }, node, source2);
+    }
+}
+
 //TEST(Flow, node_search) {
 //    flw::Flow flow;
 //
