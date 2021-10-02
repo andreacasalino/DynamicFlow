@@ -25,8 +25,8 @@ public:
     template<typename ... Values>
     NodeTest(const std::function<T(const Ts & ...)>& evaluation, const Values& ... ancestors)
         : flw::Node<T, Ts...>("", evaluation) {
-        bind(ancestors...);
-        subscribe(ancestors...);
+        flw::AncestorsAware<Ts...>::bind(ancestors...);
+        flw::Node<T, Ts...>::subscribe(ancestors...);
     };
 };
 
