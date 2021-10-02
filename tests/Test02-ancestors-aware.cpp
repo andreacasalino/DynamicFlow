@@ -16,7 +16,7 @@ class AncestorsAwareTest
 public:
     template<typename ... Values>
     AncestorsAwareTest(const Values& ... ancestors) {
-        bind(ancestors...);
+        flw::AncestorsAware<Ts...>::bind(ancestors...);
     };
 };
 
