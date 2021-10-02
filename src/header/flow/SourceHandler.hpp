@@ -31,7 +31,7 @@ namespace flw {
 
         template<typename ... Args>
         void reset(Args ... args) {
-            Source<T>* sourcePt = dynamic_cast<Source<T>*>(storer.get());
+            Source<T>* sourcePt = dynamic_cast<Source<T>*>(this->storer.get());
             sourcePt->reset(args...);
         };
 

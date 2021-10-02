@@ -63,7 +63,7 @@ namespace flw {
         template<std::size_t Index, typename Value>
         void bindSubscribeHandlers(const Value& handler) {
             const auto* storer = extract(handler);
-            bind<Index>(*storer);
+            this->template bind<Index>(*storer);
 
             const DescendantsAware* asDescAware = dynamic_cast<const DescendantsAware*>(storer);
             subscribe(*asDescAware);

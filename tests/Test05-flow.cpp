@@ -43,7 +43,9 @@ TEST(Flow, node_creation) {
         flw::Flow flow;
 
         auto source = flow.makeSource<int>("source");
-        auto node = flow.makeNode<int, int>("node", [](const int& input) { return input; }, source);
+        auto node = flow.makeNode("node", 
+            std::function<int(const int&)>([](const int& input) { return input; })
+            , source);
     }
 
     {
@@ -51,9 +53,13 @@ TEST(Flow, node_creation) {
 
         auto source1 = flow.makeSource<int>("source1");
         auto source2 = flow.makeSource<float>("source2");
-        auto node = flow.makeNode<int, int, float>("node", [](const int& in1, const float& in2) -> int { return in1; }, source1, source2);
+        auto node = flow.makeNode("node", 
+            std::function<int(const int&, const float&)>([](const int& in1, const float& in2) { return in1; })
+            , source1, source2);
 
-        auto node2 = flow.makeNode<int, int, float>("node2", [](const int& in1, const float& in2) -> int { return in1; }, node, source2);
+        auto node2 = flow.makeNode("node2", 
+            std::function<int(const int&, const float&)>([](const int& in1, const float& in2) -> int { return in1; })
+            , node, source2);
     }
 }
 
@@ -65,7 +71,9 @@ TEST(Flow, node_search) {
     {
         auto source1 = flow.makeSource<int>("source1");
         auto source2 = flow.makeSource<float>("source2");
-        flow.makeNode<int, int, float>(node_name, [](const int& in1, const float& in2) -> int { return in1; }, source1, source2);
+        flow.makeNode(node_name, 
+            std::function<int(const int&, const float&)>([](const int& in1, const float& in2) -> int { return in1; })
+            , source1, source2);
     }
 
     auto node = flow.findNode<int, int, float>(node_name);
@@ -79,7 +87,9 @@ TEST(Flow, node_copy) {
 
     auto source1 = flow.makeSource<int>("source1");
     auto source2 = flow.makeSource<float>("source2");
-    auto node = flow.makeNode<int, int, float>("node", [](const int& in1, const float& in2) -> int { return in1; }, source1, source2);
+    auto node = flow.makeNode("node", 
+        std::function<int(const int&, const float&)>([](const int& in1, const float& in2) -> int { return in1; })
+        , source1, source2);
 
     auto node_copy = node;
     EXPECT_FALSE(node_copy.isValue());
