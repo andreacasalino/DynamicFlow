@@ -17,7 +17,7 @@ public:
     template<typename ... Values>
     EvaluatorTest(const std::function<T(const Ts & ...)>& evaluation, const Values& ... ancestors)
         : flw::Evaluator<T, Ts...>(evaluation) {
-        bind(ancestors...);
+        flw::AncestorsAware<Ts...>::bind(ancestors...);
     };
 };
 
