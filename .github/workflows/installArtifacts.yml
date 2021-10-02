@@ -18,11 +18,11 @@ jobs:
         include:
             - name: ubuntu-gcc-static
               os: ubuntu-latest
-              compiler_opt: "-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -G \"Ninja\""
+              compiler_opt: "-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -G \"Unix Makefiles\""
               lib_opt: ""
             - name: ubuntu-clang-static
               os: ubuntu-latest
-              compiler_opt: "-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -G \"Ninja\""
+              compiler_opt: "-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -G \"Unix Makefiles\""
               lib_opt: ""
             - name: windows-VS-static
               os: windows-latest
@@ -30,11 +30,11 @@ jobs:
               lib_opt: ""
             - name: ubuntu-gcc-shared
               os: ubuntu-latest
-              compiler_opt: "-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -G \"Ninja\""
+              compiler_opt: "-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -G \"Unix Makefiles\""
               lib_opt: "-DLIB_OPT=ON"
             - name: ubuntu-clang-shared
               os: ubuntu-latest
-              compiler_opt: "-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -G \"Ninja\""
+              compiler_opt: "-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -G \"Unix Makefiles\""
               lib_opt: "-DLIB_OPT=ON"
             - name: windows-VS-shared
               os: windows-latest
