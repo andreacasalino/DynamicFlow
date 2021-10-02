@@ -22,7 +22,7 @@ namespace flw {
 		inline bool isException() const { return this->storer->value.isException(); };
 
 		inline std::exception_ptr getException() const {
-            this->storer->value.getException();
+            return this->storer->value.getException();
 		};
 
         bool useValue(const std::function<void(const T&)>& action) const {
