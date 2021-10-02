@@ -4,10 +4,10 @@ name: Unit Tests
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   unitTests:
@@ -51,4 +51,3 @@ jobs:
       with:
         path: artifacts
         name: ${{ matrix.name }}
-
