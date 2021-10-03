@@ -9,6 +9,7 @@
 #define FLOW_VALUE_AWARE_H
 
 #include <components/ValueStorer.hpp>
+#include <flow/FlowEntity.h>
 
 namespace flw {
 
