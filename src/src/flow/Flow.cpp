@@ -42,7 +42,8 @@ namespace flw {
             }
 
             if (isBlocked) {
-                throw Error("Something went wrong with the Flow update");
+                //throw Error("Something went wrong with the Flow update");
+                return;
             }
         }
     }

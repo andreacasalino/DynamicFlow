@@ -36,10 +36,10 @@ namespace flw {
         template<typename FunctionT>
         bool useValue(FunctionT action) const {
             std::lock_guard<std::mutex> lock(this->storer->valueMtx);
-            if (isException()) {
+            if (this->storer->value.isException()) {
                 throw Error("This object is an exception and not a value");
             }
-            if (!isValue()) {
+            if (!this->storer->value.isValue()) {
                 return false;
             }
             action(*this->storer->value.get());
