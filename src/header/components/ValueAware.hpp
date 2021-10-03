@@ -37,6 +37,10 @@ namespace flw {
             return true;
         }
 
+        inline std::size_t getGeneration() const {
+            this->storer->generations;
+        }
+
 	protected:
         ValueAware(const std::shared_ptr<ValueStorer<T>>& storer)
             : storer(storer) {

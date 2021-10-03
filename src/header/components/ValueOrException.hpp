@@ -45,11 +45,11 @@ namespace flw {
 			return this->exception;
 		};
 
-		[[nodiscard]] const T* get() const {
+		const T* get() const {
 			return this->value.get();
 		};
 
-		[[nodiscard]] T* get() {
+		T* get() {
 			return this->value.get();
 		};
 

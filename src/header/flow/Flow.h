@@ -11,6 +11,7 @@
 #include <flow/SourceHandler.hpp>
 #include <flow/NodeHandler.hpp>
 #include <map>
+#include <set>
 
 namespace flw {
 
@@ -71,6 +72,15 @@ namespace flw {
             return impl;
         };
 
+        template<typename ... UpdateInputs>
+        void updateFlow(UpdateInputs&& ... inputs) {
+            std::lock_guard<std::mutex> updateLock(updateValuesMtx);
+            std::set<EvaluateCapable*> toUpdate;
+            updateSource(toUpdate, inputs...);
+            toUpdate = computeUpdateRequired(toUpdate);
+            updateNodes(toUpdate);
+        }
+
     private:
         void checkName(const std::string& name) {
             auto it = allTogether.find(name);
@@ -79,10 +89,34 @@ namespace flw {
             }
         }
 
+        template<typename T, typename ... UpdateInputs>
+        void updateSource(std::set<EvaluateCapable*>& toUpdate, 
+                          const std::string& source_name, std::unique_ptr<T> new_value, 
+                          UpdateInputs&& ... remaining) {
+            this->template updateSource<T>(source_name, std::move(new_value));
+            updateSource(toUpdate, remaining...);
+        }
+        template<typename T>
+        void updateSource(std::set<EvaluateCapable*>& toUpdate,
+            const std::string& source_name, std::unique_ptr<T> new_value) {
+            SourceHandler<T> handler = this->template findSource<T>(source_name);
+            handler.reset(std::move(new_value));
+            Source<T>* impl = dynamic_cast<Source<T>*>(handler.storer.get());
+            for (auto* d : impl->descendants) {
+                toUpdate.emplace(d);
+            }
+        }
+
+        std::set<EvaluateCapable*> computeUpdateRequired(const std::set<EvaluateCapable*>& initialNodes);
+
+        void updateNodes(std::set<EvaluateCapable*> toUpdate);
+
         std::map<FlowName, FlowEntityPtr> sources;
         std::map<FlowName, FlowEntityPtr> nodes;
 
         std::map<FlowName, FlowEntityPtr> allTogether;
+
+        std::mutex updateValuesMtx;
     };
 }
 
