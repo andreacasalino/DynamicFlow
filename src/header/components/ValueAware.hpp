@@ -49,6 +49,10 @@ namespace flw {
             return this->storer->generations;
         }
 
+        inline const std::string& getName() const {
+            return *dynamic_cast<FlowEntity*>(this->storer.get())->getName().get();
+        }
+
 	protected:
         ValueAware(const std::shared_ptr<ValueStorer<T>>& storer)
             : storer(storer) {

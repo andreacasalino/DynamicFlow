@@ -30,10 +30,6 @@ namespace flw {
             return *this;
         };
 
-        inline const std::string& getName() const {
-            return *dynamic_cast<FlowEntity*>(this->storer.get())->getName().get();
-        }
-
     private:
         void reset(std::unique_ptr<T> newValue) {
             Source<T>* sourcePt = dynamic_cast<Source<T>*>(this->storer.get());
