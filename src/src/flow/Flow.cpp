@@ -24,17 +24,25 @@ namespace flw {
 
     void Flow::updateNodes(std::set<EvaluateCapable*> toUpdate) {
         while (!toUpdate.empty()) {
+            bool isBlocked = true;
+
             auto it = toUpdate.begin();
             while (it != toUpdate.end()) {
                 auto res = (*it)->evaluate();
                 if ((EvaluationResult::SUCCESS == res) ||
                     (EvaluationResult::BLOCKING_EXCEPTION == res)) {
                     it = toUpdate.erase(it);
+
+                    isBlocked = false;
                 }
                 else {                   
                     // EvaluationResult::NOT_READY 
                     ++it;
                 }
+            }
+
+            if (isBlocked) {
+                throw Error("Something went wrong with the Flow update");
             }
         }
     }
