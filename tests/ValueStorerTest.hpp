@@ -19,7 +19,7 @@ public:
             this->value.reset(std::make_unique<T>(args...));
         }
         catch (const std::exception & e) {
-            this->value.reset(std::make_exception_ptr(e));
+            this->value.resetException(std::make_exception_ptr(e));
         }
     };
 };

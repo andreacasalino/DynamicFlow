@@ -33,7 +33,7 @@ namespace flw {
 			this->reset(exception);
 		};
 
-		void reset(const std::exception_ptr& exception) {
+		void resetException(const std::exception_ptr& exception) {
 			this->exception = exception;
 			this->value.reset();
 		};
@@ -45,11 +45,11 @@ namespace flw {
 			return this->exception;
 		};
 
-		[[nodiscard]] const T* get() const {
+		const T* get() const {
 			return this->value.get();
 		};
 
-		[[nodiscard]] T* get() {
+		T* get() {
 			return this->value.get();
 		};
 

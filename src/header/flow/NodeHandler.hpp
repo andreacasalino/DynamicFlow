@@ -28,10 +28,6 @@ namespace flw {
             static_cast<ValueAware<T>&>(*this) = static_cast<const ValueAware<T>&>(o);
             return *this;
         };
-
-        inline const std::string& getName() const {
-            return *dynamic_cast<FlowEntity*>(this->storer.get())->getName().get();
-        }
     };
 
 }

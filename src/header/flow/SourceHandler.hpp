@@ -16,6 +16,7 @@ namespace flw {
     template<typename T>
     class SourceHandler
         : public ValueAware<T> {
+        friend class Flow;
     public:
         SourceHandler(std::shared_ptr<Source<T>> sourceImpl)
             : ValueAware<T>(sourceImpl) {
@@ -29,15 +30,11 @@ namespace flw {
             return *this;
         };
 
-        template<typename ... Args>
-        void reset(Args ... args) {
+    private:
+        void reset(std::unique_ptr<T> newValue) {
             Source<T>* sourcePt = dynamic_cast<Source<T>*>(this->storer.get());
-            sourcePt->reset(args...);
+            sourcePt->reset(std::move(newValue));
         };
-
-        inline const std::string& getName() const {
-            return *dynamic_cast<FlowEntity*>(this->storer.get())->getName().get();
-        }
     };
 }
 

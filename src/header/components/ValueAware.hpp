@@ -9,6 +9,7 @@
 #define FLOW_VALUE_AWARE_H
 
 #include <components/ValueStorer.hpp>
+#include <flow/FlowEntity.h>
 
 namespace flw {
 
@@ -18,23 +19,39 @@ namespace flw {
 	public:
         virtual ~ValueAware() = default;
 
-		inline bool isValue() const { return this->storer->value.isValue(); };
-		inline bool isException() const { return this->storer->value.isException(); };
+		bool isValue() const {
+            std::lock_guard<std::mutex> lock(this->storer->valueMtx);
+            return this->storer->value.isValue(); 
+        };
+		bool isException() const {
+            std::lock_guard<std::mutex> lock(this->storer->valueMtx);
+            return this->storer->value.isException(); 
+        };
 
-		inline std::exception_ptr getException() const {
+		std::exception_ptr getException() const {
+            std::lock_guard<std::mutex> lock(this->storer->valueMtx);
             return this->storer->value.getException();
 		};
 
-        bool useValue(const std::function<void(const T&)>& action) const {
-            std::lock_guard<std::mutex> lock(this->storer->value.valueMtx);
-            if (isException()) {
+        template<typename FunctionT>
+        bool useValue(FunctionT action) const {
+            std::lock_guard<std::mutex> lock(this->storer->valueMtx);
+            if (this->storer->value.isException()) {
                 throw Error("This object is an exception and not a value");
             }
-            if (!isValue()) {
+            if (!this->storer->value.isValue()) {
                 return false;
             }
             action(*this->storer->value.get());
             return true;
+        }
+
+        inline std::size_t getGeneration() const {
+            return this->storer->generations;
+        }
+
+        inline const std::string& getName() const {
+            return *dynamic_cast<FlowEntity*>(this->storer.get())->getName().get();
         }
 
 	protected:

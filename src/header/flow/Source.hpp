@@ -21,8 +21,11 @@ namespace flw {
         , public DescendantsAware {
         friend class Flow;
     public:
-        template<typename ... Args>
-        void reset(Args ... args);
+        void reset(std::unique_ptr<T> newValue) {
+            std::lock_guard<std::mutex> lock(this->valueMtx);
+            this->value.reset(std::move(newValue));
+            ++this->generations;
+        };
 
     protected:
         Source(const std::string& name)

@@ -10,6 +10,7 @@
 
 #include <components/ValueOrException.hpp>
 #include <mutex>
+#include <atomic>
 
 namespace flw {
 
@@ -20,6 +21,8 @@ namespace flw {
 
         mutable std::mutex valueMtx;
         ValueOrException<T> value;
+
+        std::atomic<std::size_t> generations = std::atomic<std::size_t>{0};
 
     protected:
         ValueStorer() = default;
