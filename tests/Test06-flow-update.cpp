@@ -10,13 +10,6 @@
 #include <sstream>
 
 template<typename ... Args>
-std::string merge(const std::string& toAdd, Args ... remaining) {
-    std::stringstream stream;
-    merge(stream, toAdd, remaining...);
-    return stream.str();
-};
-
-template<typename ... Args>
 void merge(std::stringstream& stream, const std::string& toAdd, Args ... remaining) {
     merge(stream, toAdd);
     merge(stream, remaining...);
@@ -24,6 +17,13 @@ void merge(std::stringstream& stream, const std::string& toAdd, Args ... remaini
 
 void merge(std::stringstream& stream, const std::string& toAdd) {
     stream << toAdd;
+};
+
+template<typename ... Args>
+std::string merge(const std::string& toAdd, Args ... remaining) {
+    std::stringstream stream;
+    merge(stream, toAdd, remaining...);
+    return stream.str();
 };
 
 #define MERGE_SINGLE \
