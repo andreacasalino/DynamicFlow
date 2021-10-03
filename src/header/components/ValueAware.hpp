@@ -18,15 +18,23 @@ namespace flw {
 	public:
         virtual ~ValueAware() = default;
 
-		inline bool isValue() const { return this->storer->value.isValue(); };
-		inline bool isException() const { return this->storer->value.isException(); };
+		bool isValue() const {
+            std::lock_guard<std::mutex> lock(this->storer->valueMtx);
+            return this->storer->value.isValue(); 
+        };
+		bool isException() const {
+            std::lock_guard<std::mutex> lock(this->storer->valueMtx);
+            return this->storer->value.isException(); 
+        };
 
-		inline std::exception_ptr getException() const {
+		std::exception_ptr getException() const {
+            std::lock_guard<std::mutex> lock(this->storer->valueMtx);
             return this->storer->value.getException();
 		};
 
-        bool useValue(const std::function<void(const T&)>& action) const {
-            std::lock_guard<std::mutex> lock(this->storer->value.valueMtx);
+        template<typename FunctionT>
+        bool useValue(FunctionT action) const {
+            std::lock_guard<std::mutex> lock(this->storer->valueMtx);
             if (isException()) {
                 throw Error("This object is an exception and not a value");
             }
@@ -38,7 +46,7 @@ namespace flw {
         }
 
         inline std::size_t getGeneration() const {
-            this->storer->generations;
+            return this->storer->generations;
         }
 
 	protected:

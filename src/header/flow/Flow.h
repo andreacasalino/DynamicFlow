@@ -76,7 +76,7 @@ namespace flw {
         void updateFlow(UpdateInputs&& ... inputs) {
             std::lock_guard<std::mutex> updateLock(updateValuesMtx);
             std::set<EvaluateCapable*> toUpdate;
-            updateSource(toUpdate, inputs...);
+            updateSource(toUpdate, std::forward<UpdateInputs>(inputs)...);
             toUpdate = computeUpdateRequired(toUpdate);
             updateNodes(toUpdate);
         }
@@ -93,8 +93,8 @@ namespace flw {
         void updateSource(std::set<EvaluateCapable*>& toUpdate, 
                           const std::string& source_name, std::unique_ptr<T> new_value, 
                           UpdateInputs&& ... remaining) {
-            this->template updateSource<T>(source_name, std::move(new_value));
-            updateSource(toUpdate, remaining...);
+            this->template updateSource<T>(toUpdate, source_name, std::move(new_value));
+            updateSource(toUpdate, std::forward<UpdateInputs>(remaining)...);
         }
         template<typename T>
         void updateSource(std::set<EvaluateCapable*>& toUpdate,

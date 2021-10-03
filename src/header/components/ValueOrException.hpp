@@ -33,7 +33,7 @@ namespace flw {
 			this->reset(exception);
 		};
 
-		void reset(const std::exception_ptr& exception) {
+		void resetException(const std::exception_ptr& exception) {
 			this->exception = exception;
 			this->value.reset();
 		};

@@ -91,7 +91,7 @@ TEST(ValueOrException, exception) {
 		std::unique_ptr<String> temp = std::make_unique<String>("");
 	}
 	catch (const flw::Error& e) {
-		value.reset(std::make_exception_ptr(e));
+		value.resetException(std::make_exception_ptr(e));
 	}
 	EXPECT_TRUE(nullptr == value);
 	EXPECT_TRUE(value.isException());

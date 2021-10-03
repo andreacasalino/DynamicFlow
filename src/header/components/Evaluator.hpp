@@ -37,7 +37,7 @@ namespace flw {
             const auto& ancestor = subject.template getAncestor<Position>().ancestor;
             std::lock_guard<std::mutex> lock(ancestor->valueMtx);
             if (ancestor->value.isException()) {
-                ancestor->value.reset(std::make_exception_ptr(Error("Evaluation blocked by excpetion on ancestors")) );
+                subject.value.resetException(std::make_exception_ptr(Error("Evaluation blocked by exception on ancestors")));
                 return EvaluationResult::BLOCKING_EXCEPTION;
             }
             if (!ancestor->value.isValue()) {
@@ -52,7 +52,7 @@ namespace flw {
                 subject.value.reset( std::make_unique<ResultT>(evaluation(args..., *ancestor->value.get())) );
             }
             catch (const std::exception& e) {
-                subject.value.reset(std::make_exception_ptr(e));
+                subject.value.resetException(std::make_exception_ptr(e));
             }
 
             ++subject.generations;
