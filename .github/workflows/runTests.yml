@@ -47,8 +47,6 @@ jobs:
       run: ./artifacts/bin/Test04-nodes-creation
     - name: Test-05
       run: ./artifacts/bin/Test05-flow-creation
-    - name: Test-06
-      run: ./artifacts/bin/Test06-flow-update
     - uses: actions/upload-artifact@v2
       with:
         path: artifacts
