@@ -9,18 +9,18 @@
 #include <flow/Flow.h>
 #include <sstream>
 
-template<typename ... Args>
-void merge(std::stringstream& stream, const std::string& toAdd, Args ... remaining) {
-    merge(stream, toAdd);
-    merge(stream, remaining...);
-};
-
 void merge(std::stringstream& stream, const std::string& toAdd) {
     stream << toAdd;
 };
 
 template<typename ... Args>
-std::string merge(const std::string& toAdd, Args ... remaining) {
+void merge(std::stringstream& stream, const std::string& toAdd, const Args& ... remaining) {
+    merge(stream, toAdd);
+    merge(stream, remaining...);
+};
+
+template<typename ... Args>
+std::string merge(const std::string& toAdd, const Args& ... remaining) {
     std::stringstream stream;
     merge(stream, toAdd, remaining...);
     return stream.str();
