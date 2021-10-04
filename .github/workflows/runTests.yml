@@ -48,7 +48,9 @@ jobs:
     - name: Test-05
       run: ./artifacts/bin/Test05-flow-creation
     - name: Test-06
-      run: ./artifacts/bin/Test06-flow-update      
+      run: ./artifacts/bin/Test06-flow-update    
+    - name: Test-07
+      run: ./artifacts/bin/Test07-flow-busy-check
     - uses: actions/upload-artifact@v2
       with:
         path: artifacts

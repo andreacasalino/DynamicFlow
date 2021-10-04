@@ -47,4 +47,42 @@ namespace flw {
             }
         }
     }
+
+    bool Flow::isBusy() const {
+        return busy;
+    }
+
+    template<typename Condition>
+    void waitInfinite(Condition condition) {
+        while (condition()) {
+        }
+    }
+
+    template<typename Condition>
+    void waitFinite(Condition condition, const std::chrono::microseconds& maxWaitTime) {
+        std::chrono::microseconds elapsed(0);
+        while (true) {
+            auto tic = std::chrono::high_resolution_clock::now();
+            if (!condition()) {
+                return;
+            }
+            elapsed += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tic);
+            if (elapsed.count() >= maxWaitTime.count()) {
+                return;
+            }
+        }
+    }
+
+    void Flow::waitUpdateComplete(const std::chrono::microseconds& maxWaitTime) const {
+        if (0 == maxWaitTime.count()) {
+            waitInfinite([this]() {
+                return this->isBusy();
+            });
+        }
+        else {
+            waitFinite([this]() {
+                return this->isBusy();
+            }, maxWaitTime);
+        }
+    }
 }

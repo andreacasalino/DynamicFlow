@@ -50,7 +50,6 @@ namespace flw {
         };
 
         void subscribe(const DescendantsAware& ancestor) {
-            std::lock_guard<std::mutex> lock(ancestor.descendantsMtx);
             ancestor.descendants.push_back(this);
         };
 

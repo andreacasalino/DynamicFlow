@@ -10,13 +10,11 @@
 
 #include <components/EvaluateCapable.h>
 #include <list>
-#include <mutex>
 
 namespace flw {
 
     class DescendantsAware {
     public:
-        mutable std::mutex descendantsMtx;
         mutable std::list<EvaluateCapable*> descendants;
 
     protected:
