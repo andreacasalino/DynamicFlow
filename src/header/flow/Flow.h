@@ -12,6 +12,7 @@
 #include <flow/NodeHandler.hpp>
 #include <map>
 #include <set>
+#include <chrono>
 
 namespace flw {
 
@@ -75,11 +76,17 @@ namespace flw {
         template<typename ... UpdateInputs>
         void updateFlow(UpdateInputs&& ... inputs) {
             std::lock_guard<std::mutex> updateLock(updateValuesMtx);
+            busy = true;
             std::set<EvaluateCapable*> toUpdate;
             updateSource(toUpdate, std::forward<UpdateInputs>(inputs)...);
             toUpdate = computeUpdateRequired(toUpdate);
             updateNodes(toUpdate);
+            busy = false;
         }
+
+        void waitUpdateComplete(const std::chrono::microseconds& maxWaitTime = std::chrono::microseconds(0)) const;
+
+        bool isBusy() const;
 
     private:
         void checkName(const std::string& name) {
@@ -116,7 +123,8 @@ namespace flw {
 
         std::map<FlowName, FlowEntityPtr> allTogether;
 
-        std::mutex updateValuesMtx;
+        mutable std::mutex updateValuesMtx;
+        std::atomic_bool busy = false;
     };
 }
 
