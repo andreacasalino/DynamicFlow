@@ -69,6 +69,32 @@ namespace flw {
 
         std::shared_ptr<ValueStorer<T>> storer;
 	};
+
+    template<typename T> 
+    T copyValue(const ValueAware<T>& entity) {
+        if(!entity.isValue()) {
+            throw Error("Entity named ", entity.getName() ," does not contains a value");
+        }
+        T copy;
+        auto cloner = [&copy](const auto& val) {
+            copy = val;
+        };
+        entity.useValue(cloner);
+        return copy;
+    }
+
+    template<typename T>
+    std::unique_ptr<T> copyValuePtr(const ValueAware<T>& entity) {
+        if (!entity.isValue()) {
+            throw Error("Entity named ", entity.getName(), " does not contains a value");
+        }
+        std::unique_ptr<T> copy;
+        auto cloner = [&copy](const auto& val) {
+            copy = std::make_unique<T>(val);
+        };
+        entity.useValue(cloner);
+        return std::move(copy);
+    }
 }
 
 #endif
