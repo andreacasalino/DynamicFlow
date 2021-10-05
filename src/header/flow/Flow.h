@@ -27,6 +27,7 @@ namespace flw {
 
         template<typename T>
         SourceHandler<T> makeSource(const std::string& name) {
+            std::lock_guard<std::mutex> creationLock(entityCreationMtx);
             checkName(name);
             Source<T>* impl = new Source<T>(name);
             std::shared_ptr<Source<T>> source;
@@ -38,19 +39,13 @@ namespace flw {
 
         template<typename T>
         SourceHandler<T> findSource(const std::string& name) {
-            auto it = sources.find(name);
-            if (it == sources.end()) {
-                throw Error("Inexistent");
-            }
-            std::shared_ptr<Source<T>> impl = std::dynamic_pointer_cast<Source<T>, FlowEntity>(it->second);
-            if (nullptr == impl) {
-                throw Error("Wrong type asked");
-            }
-            return impl;
+            std::lock_guard<std::mutex> creationLock(entityCreationMtx);
+            return this->template findSource_<T>(name);
         };
 
         template<typename T, typename ... Ts, typename ... Args>
         NodeHandler<T, Ts...> makeNode(const std::string& name, const std::function<T(const Ts & ...)>& evaluation, const Args& ... handlers) {
+            std::lock_guard<std::mutex> creationLock(entityCreationMtx);
             checkName(name);
             checkIsInternalEntity(handlers...);
             Node<T, Ts...>* impl = new Node<T, Ts...>(name, evaluation, handlers...);
@@ -63,6 +58,7 @@ namespace flw {
 
         template<typename T, typename ... Ts>
         NodeHandler<T, Ts...> findNode(const std::string& name) {
+            std::lock_guard<std::mutex> creationLock(entityCreationMtx);
             auto it = nodes.find(name);
             if (it == nodes.end()) {
                 throw Error("Inexistent");
@@ -76,11 +72,16 @@ namespace flw {
 
         template<typename ... UpdateInputs>
         void updateFlow(UpdateInputs&& ... inputs) {
+            std::unique_ptr<std::lock_guard<std::mutex>> creationLock
+                = std::make_unique<std::lock_guard<std::mutex>>(entityCreationMtx);
             std::lock_guard<std::mutex> updateLock(updateValuesMtx);
             busy = true;
             std::set<EvaluateCapable*> toUpdate;
-            updateSource(toUpdate, std::forward<UpdateInputs>(inputs)...);
-            toUpdate = computeUpdateRequired(toUpdate);
+            {
+                updateSource(toUpdate, std::forward<UpdateInputs>(inputs)...);
+                toUpdate = computeUpdateRequired(toUpdate);
+                creationLock.reset();
+            }
             updateNodes(toUpdate);
             busy = false;
         }
@@ -118,6 +119,19 @@ namespace flw {
             }
         }
 
+        template<typename T>
+        SourceHandler<T> findSource_(const std::string& name) {
+            auto it = sources.find(name);
+            if (it == sources.end()) {
+                throw Error("Inexistent");
+            }
+            std::shared_ptr<Source<T>> impl = std::dynamic_pointer_cast<Source<T>, FlowEntity>(it->second);
+            if (nullptr == impl) {
+                throw Error("Wrong type asked");
+            }
+            return impl;
+        };
+
         template<typename T, typename ... UpdateInputs>
         void updateSource(std::set<EvaluateCapable*>& toUpdate, 
                           const std::string& source_name, std::unique_ptr<T> new_value, 
@@ -128,7 +142,7 @@ namespace flw {
         template<typename T>
         void updateSource(std::set<EvaluateCapable*>& toUpdate,
             const std::string& source_name, std::unique_ptr<T> new_value) {
-            SourceHandler<T> handler = this->template findSource<T>(source_name);
+            SourceHandler<T> handler = this->template findSource_<T>(source_name);
             handler.reset(std::move(new_value));
             Source<T>* impl = dynamic_cast<Source<T>*>(handler.storer.get());
             for (auto* d : impl->descendants) {
@@ -146,6 +160,7 @@ namespace flw {
         std::map<FlowName, FlowEntityPtr> allTogether;
 
         mutable std::mutex updateValuesMtx;
+        mutable std::mutex entityCreationMtx;
         std::atomic_bool busy = false;
     };
 }
