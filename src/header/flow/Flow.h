@@ -52,6 +52,7 @@ namespace flw {
         template<typename T, typename ... Ts, typename ... Args>
         NodeHandler<T, Ts...> makeNode(const std::string& name, const std::function<T(const Ts & ...)>& evaluation, const Args& ... handlers) {
             checkName(name);
+            checkIsInternalEntity(handlers...);
             Node<T, Ts...>* impl = new Node<T, Ts...>(name, evaluation, handlers...);
             std::shared_ptr<Node<T, Ts...>> node;
             node.reset(impl);
@@ -92,7 +93,28 @@ namespace flw {
         void checkName(const std::string& name) {
             auto it = allTogether.find(name);
             if (it != allTogether.end()) {
-                throw Error("Name already reserved");
+                throw Error(name,  " is an already reserved name");
+            }
+        }
+
+        template<typename EntityT, typename ... Args>
+        void checkIsInternalEntity(const EntityT& entity, const Args& ... remaining) {
+            checkIsInternalEntity(entity);
+            checkIsInternalEntity(remaining...);
+        }
+
+        template<typename EntityT>
+        void checkIsInternalEntity(const EntityT& entity) {
+            const FlowEntity* entityPtr = dynamic_cast<const FlowEntity*>(entity.storer.get());
+            if (nullptr == entityPtr) {
+                throw Error("Not a valid entity");
+            }
+            auto it = allTogether.find(entityPtr->getName());
+            if (it == allTogether.end()) {
+                throw Error(*entityPtr->getName().get(), " is not a entity of this flow");
+            }
+            if (it->second.get() != entityPtr) {
+                throw Error(*entityPtr->getName().get(), " is not a entity of this flow");
             }
         }
 

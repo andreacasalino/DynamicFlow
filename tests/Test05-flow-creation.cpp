@@ -96,6 +96,33 @@ TEST(Flow, node_copy) {
     EXPECT_FALSE(node_copy.isException());
 }
 
+TEST(Flow, node_name_already_existing) {
+    flw::Flow flow;
+
+    auto source1 = flow.makeSource<int>("source1");
+    auto source2 = flow.makeSource<float>("source2");
+
+    flow.makeNode("node",
+        std::function<int(const int&, const float&)>([](const int& in1, const float& in2) -> int { return in1; })
+        , source1, source2);
+
+    ASSERT_THROW(flow.makeNode("node",
+        std::function<int(const int&, const float&)>([](const int& in1, const float& in2) -> int { return in1; })
+        , source1, source2), flw::Error);
+}
+
+TEST(Flow, node_external_input) {
+    flw::Flow flow1;
+    auto source1 = flow1.makeSource<int>("source1");
+
+    flw::Flow flow2;
+    auto source2 = flow2.makeSource<float>("source2");
+
+    ASSERT_THROW(flow1.makeNode("node",
+        std::function<int(const int&, const float&)>([](const int& in1, const float& in2) -> int { return in1; })
+        , source1, source2), flw::Error);
+}
+
 int main(int argc, char* argv[]) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
