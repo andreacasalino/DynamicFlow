@@ -16,6 +16,7 @@ namespace flw {
     template<typename T, typename ... Ts>
     class NodeHandler
         : public ValueAware<T> {
+        friend class Flow;
     public:
         NodeHandler(std::shared_ptr<Node<T, Ts...>> nodeImpl)
             : ValueAware<T>(nodeImpl) {

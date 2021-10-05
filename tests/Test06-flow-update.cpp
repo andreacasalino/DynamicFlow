@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 #include <flow/Flow.h>
 #include <sstream>
+#include <thread>
 
 void merge(std::stringstream& stream, const std::string& toAdd) {
     stream << toAdd;
@@ -181,6 +182,40 @@ TEST(Flow, two_source_three_node_update) {
     EXPECT_EQ(copyValue(node1), merge(source_val1, source_val2));
     EXPECT_EQ(copyValue(node2), merge(source_val2, source_val1));
     EXPECT_EQ(copyValue(node3), merge(copyValue(node1), copyValue(node2)));
+}
+
+
+TEST(Flow, node_creation_while_updating_flow) {
+    flw::Flow flow;
+
+    auto source = flow.makeSource<int>("source");
+    auto node = flow.makeNode("node",
+        std::function<int(const int&)>([](const int& input) {
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+            return input;
+            }), source);
+
+    flow.updateFlow(source.getName(), std::make_unique<int>(0));
+    {
+        std::thread th([&]() {
+            flow.makeNode("node2",
+                std::function<int(const int&)>([](const int& input) {
+                    return input;
+                }), node);
+        });
+        th.join();
+    }
+    auto node2 = flow.findNode<int, int>("node2");
+
+    flow.waitUpdateComplete();
+
+    EXPECT_TRUE(node.isValue());
+    EXPECT_FALSE(node2.isValue());
+
+    flow.updateFlow(source.getName(), std::make_unique<int>(0));
+    flow.waitUpdateComplete();
+    EXPECT_TRUE(node.isValue());
+    EXPECT_TRUE(node2.isValue());
 }
 
 int main(int argc, char* argv[]) {
