@@ -82,18 +82,58 @@ void make_text_analysis_nodes(Flow &flow, const std::string &text_name) {
       wordsFrequencies);
 }
 
+void show_text_analysis_result(Flow &flow, const std::string &text_name) {
+  std::cout << text_name << "  analysis" << std::endl;
+
+  auto linesCounter =
+      flow.template findNode<std::size_t, std::list<std::string>>(
+          text_name + std::string("-lines-counter"));
+  std::cout << "lines: " << copyValue(linesCounter) << std::endl;
+
+  auto spacesCounter =
+      flow.template findNode<std::size_t, std::list<std::string>>(
+          text_name + std::string("-spaces-counter"));
+  std::cout << "spaces: " << copyValue(spacesCounter) << std::endl;
+
+  auto wordsCounter =
+      flow.template findNode<std::size_t, std::map<std::string, std::size_t>>(
+          text_name + std::string("-words-counter"));
+  std::cout << "words: " << copyValue(wordsCounter) << std::endl;
+
+  auto content = flow.template findNode<std::list<std::string>, std::string>(
+      text_name + std::string("-content"));
+  std::cout << "content: " << std::endl;
+  content.useValue([](const std::list<std::string> &lines) {
+    for (const auto &line : lines) {
+      std::cout << line << std::endl;
+    }
+  });
+
+  auto wordsFrequencies =
+      flow.template findNode<std::map<std::string, std::size_t>,
+                             std::vector<std::list<std::string>>>(
+          text_name + std::string("-words-frequencies"));
+  std::cout << "words frequencies: " << std::endl;
+  wordsFrequencies.useValue([](const std::map<std::string, std::size_t> &freq) {
+    for (auto it = freq.begin(); it != freq.end(); ++it) {
+      std::cout << it->first << "  :  " << it->second << std::endl;
+    }
+  });
+}
+
 int main() {
   // build the flow
   flw::Flow flow;
 
   // build initial nodes for reading and parsing the first text
-  const std::string first_text = "Dummy-text";
+  const std::string first_text = "LoremIpsum";
   make_text_analysis_nodes(flow, first_text);
 
   // set the inputs and update the flow
   flow.updateFlow(first_text, std::make_unique<std::string>(
                                   std::string(SAMPLE_PATH) + first_text));
   flow.waitUpdateComplete();
+  show_text_analysis_result(flow, first_text);
 
   return EXIT_SUCCESS;
 }

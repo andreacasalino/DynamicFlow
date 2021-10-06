@@ -10,7 +10,18 @@ std::size_t countSpaces(const std::string &line) {
   return result;
 }
 
-#include <Error.h>
 std::list<std::string> parseWords(const std::string &line) {
-  throw flw::Error("still to implement");
+  std::list<std::string> result;
+  std::string formingWord;
+  for (std::size_t k = 0; k < line.size(); ++k) {
+    if (' ' == line[k]) {
+      if (!formingWord.empty()) {
+        result.push_back(formingWord);
+      }
+      formingWord.clear();
+    } else {
+      formingWord.push_back(line[k]);
+    }
+  }
+  return result;
 }
