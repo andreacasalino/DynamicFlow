@@ -6,6 +6,7 @@
  **/
 
 #include <flow/Flow.h>
+#include <omp.h>
 
 namespace flw {
     std::set<EvaluateCapable*> Flow::computeUpdateRequired(const std::set<EvaluateCapable*>& initialNodes) {
@@ -22,29 +23,87 @@ namespace flw {
         return close;
     }
 
-    void Flow::updateNodes(std::set<EvaluateCapable*> toUpdate) {
-        while (!toUpdate.empty()) {
-            bool isBlocked = true;
-
-            auto it = toUpdate.begin();
-            while (it != toUpdate.end()) {
-                auto res = (*it)->evaluate();
-                if ((EvaluationResult::SUCCESS == res) ||
-                    (EvaluationResult::BLOCKING_EXCEPTION == res)) {
-                    it = toUpdate.erase(it);
-
-                    isBlocked = false;
-                }
-                else {                   
-                    // EvaluationResult::NOT_READY 
-                    ++it;
-                }
+    bool process(std::set<EvaluateCapable*>& toUpdate) {
+        bool isBlocked = true;
+        auto it = toUpdate.begin();
+        while (it != toUpdate.end()) {
+            auto res = (*it)->evaluate();
+            if ((EvaluationResult::SUCCESS == res) ||
+                (EvaluationResult::BLOCKING_EXCEPTION == res)) {
+                it = toUpdate.erase(it);
+                isBlocked = false;
             }
+            else {
+                // EvaluationResult::NOT_READY 
+                ++it;
+            }
+        }
+        return isBlocked;
+    }
 
-            if (isBlocked) {
+    void updateNodesSerial(std::set<EvaluateCapable*>& toUpdate) {
+        while (!toUpdate.empty()) {
+            if (process(toUpdate)) {
                 //throw Error("Something went wrong with the Flow update");
                 return;
             }
+        }
+    }
+
+    bool areAllTrue(const std::vector<bool>& flags) {
+        for (const auto flag : flags) {
+            if (!flag) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    void updateNodesParallel(std::set<EvaluateCapable*>& toUpdate, const std::size_t threads) {
+        std::vector<std::set<EvaluateCapable*>> queues;
+        queues.resize(threads);
+        std::vector<bool> blockedFlags(threads, false);
+        bool stop = false;
+    #pragma omp parallel \
+    num_threads(static_cast<const int>(threads))
+        {
+            int thID = omp_get_thread_num();
+            if (0 == thID) {
+                while (!toUpdate.empty()) {
+#pragma omp barrier 
+                    blockedFlags[thID] = process(queues[thID]);
+#pragma omp barrier 
+                    if (areAllTrue(blockedFlags)) {
+                        break;
+                    }
+                }
+                stop = true;
+#pragma omp barrier 
+            }
+            else {
+                while (true) {
+                    if (stop) {
+                        break;
+                    }
+#pragma omp barrier 
+                    blockedFlags[thID] = process(queues[thID]);
+#pragma omp barrier 
+                }
+                
+            }
+        }
+    }
+
+    void Flow::updateNodes(std::set<EvaluateCapable*> toUpdate) {
+        if (toUpdate.empty()) {
+            return;
+        }
+        const std::size_t threads = threadsForUpdate;
+        if (1 == threads) {
+            updateNodesSerial(toUpdate);
+        }
+        else {
+            updateNodesParallel(toUpdate, threads);
         }
     }
 
@@ -84,5 +143,21 @@ namespace flw {
                 return this->isBusy();
             }, maxWaitTime);
         }
+    }
+
+    std::size_t getThreadsAvailability() {
+        std::size_t max_threads;
+#pragma omp parallel
+        { 
+            max_threads = omp_get_thread_num();
+        }
+        return max_threads;
+    }
+    static const std::size_t MAX_THREADS = getThreadsAvailability();
+    void Flow::setThreadsForUpdate(const std::size_t threads) {
+        if (0 == threads) {
+            threadsForUpdate = MAX_THREADS;
+        }
+        threadsForUpdate = threads;
     }
 }

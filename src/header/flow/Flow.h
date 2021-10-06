@@ -90,6 +90,8 @@ namespace flw {
 
         bool isBusy() const;
 
+        void setThreadsForUpdate(const std::size_t threads = 0);
+
     private:
         void checkName(const std::string& name) {
             auto it = allTogether.find(name);
@@ -162,6 +164,8 @@ namespace flw {
         mutable std::mutex updateValuesMtx;
         mutable std::mutex entityCreationMtx;
         std::atomic_bool busy = false;
+
+        std::atomic<std::size_t> threadsForUpdate = 1;
     };
 }
 
