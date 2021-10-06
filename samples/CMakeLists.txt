@@ -1,18 +1,5 @@
-function(MAKE_SAMPLE NAME)
-	add_executable(${NAME} ${NAME}.cpp)
+include(cmake/make-sample.cmake)
 
-	target_link_libraries(${NAME}
-	PUBLIC
-		DynamicFlow
-	)
-	
-	install(TARGETS ${NAME})
-endfunction()
+add_subdirectory(Sample-01-big-vector-samples)
 
-file(GLOB SAMPLES [RELATIVE path] *.cpp)
-foreach(sample ${SAMPLES})
-	get_filename_component(SAMPLE_NAME_EXTENSION ${sample} NAME [CACHE])
-	get_filename_component(SAMPLE_NAME ${SAMPLE_NAME_EXTENSION} NAME_WE [CACHE])
-	message(STATUS "Creating sample named: ${SAMPLE_NAME}")
-	MAKE_SAMPLE(${SAMPLE_NAME})
-endforeach()
+add_subdirectory(Sample-02-long-text-process)

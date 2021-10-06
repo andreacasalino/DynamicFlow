@@ -51,6 +51,8 @@ jobs:
       run: ./artifacts/bin/Test06-flow-update    
     - name: Test-07
       run: ./artifacts/bin/Test07-flow-busy-check
+    - name: Test-08
+      run: ./artifacts/bin/Test08-flow-update-lazyness
     - uses: actions/upload-artifact@v2
       with:
         path: artifacts
