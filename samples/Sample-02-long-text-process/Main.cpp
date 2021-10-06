@@ -1,96 +1,99 @@
-#include <Sampler.h>
+#include <TextImport.h>
+#include <WordsParser.h>
 #include <flow/Flow.h>
 
-#include <cmath>
 #include <iostream>
-#include <math.h>
+#include <map>
 #include <vector>
 using namespace flw;
 
+void make_text_analysis_nodes(Flow &flow, const std::string &text_name) {
+  auto location = flow.makeSource<std::string>(text_name);
+
+  auto content = flow.makeNode(
+      location.getName() + std::string("-content"),
+      std::function<std::list<std::string>(const std::string &)>(
+          [](const std::string &file_path) { return importText(file_path); }),
+      location);
+
+  auto linesCounter = flow.makeNode(
+      location.getName() + std::string("-lines-counter"),
+      std::function<std::size_t(const std::list<std::string> &)>(
+          [](const std::list<std::string> &content) { return content.size(); }),
+      content);
+
+  auto spacesCounter =
+      flow.makeNode(location.getName() + std::string("-spaces-counter"),
+                    std::function<std::size_t(const std::list<std::string> &)>(
+                        [](const std::list<std::string> &content) {
+                          std::size_t result = 0;
+                          for (const auto &line : content) {
+                            result += countSpaces(line);
+                          }
+                          return result;
+                        }),
+                    content);
+
+  auto wordsByLine =
+      flow.makeNode(location.getName() + std::string("-words-by-lines"),
+                    std::function<std::vector<std::list<std::string>>(
+                        const std::list<std::string> &)>(
+                        [](const std::list<std::string> &content) {
+                          std::vector<std::list<std::string>> result;
+                          result.reserve(content.size());
+                          for (const auto &line : content) {
+                            result.push_back(parseWords(line));
+                          }
+                          return result;
+                        }),
+                    content);
+
+  auto wordsFrequencies = flow.makeNode(
+      location.getName() + std::string("-words-frequencies"),
+      std::function<std::map<std::string, std::size_t>(
+          const std::vector<std::list<std::string>> &)>(
+          [](const std::vector<std::list<std::string>> &wordsByLine) {
+            std::map<std::string, std::size_t> result;
+            for (const auto &line : wordsByLine) {
+              for (const auto &word : line) {
+                auto it = result.find(word);
+                if (it == result.end()) {
+                  result.emplace(word, 1);
+                } else {
+                  ++it->second;
+                }
+              }
+            }
+            return result;
+          }),
+      wordsByLine);
+
+  auto wordsCounter = flow.makeNode(
+      location.getName() + std::string("-words-counter"),
+      std::function<std::size_t(const std::map<std::string, std::size_t> &)>(
+          [](const std::map<std::string, std::size_t> &wordsFrequencies) {
+            std::size_t result = 0;
+            for (auto it = wordsFrequencies.begin();
+                 it != wordsFrequencies.end(); ++it) {
+              result += it->second;
+            }
+            return result;
+          }),
+      wordsFrequencies);
+}
+
 int main() {
-  // build a new flow object
+  // build the flow
   flw::Flow flow;
 
-  // define the source, which will be the number of samples to draw
-  auto samplesNumber = flow.makeSource<std::size_t>("SamplesNumber");
+  // build initial nodes for reading and parsing the first text
+  const std::string first_text = "Dummy-text";
+  make_text_analysis_nodes(flow, first_text);
 
-  // define the node containing the samples
-  auto samples =
-      flow.makeNode("Samples",
-                    std::function<std::vector<int>(const std::size_t &)>(
-                        [](const std::size_t &size) {
-                          Sampler sampler(-5, 5);
-                          std::vector<int> samples;
-                          samples.reserve(size);
-                          for (std::size_t k = 0; k < size; ++k) {
-                            samples.push_back(sampler.sample());
-                          }
-                          return samples;
-                        }),
-                    samplesNumber);
-
-  // define the node storing the mean of the samples
-  auto samplesMean =
-      flow.makeNode("SamplesMean",
-                    std::function<float(const std::vector<int> &)>(
-                        [](const std::vector<int> &samples) {
-                          if (samples.empty()) {
-                            throw Error("Empty samples vector");
-                          }
-
-                          float mean = 0.f;
-                          float coeff =
-                              1.f / static_cast<float>(samples.size());
-                          for (const auto &sample : samples) {
-                            mean += coeff * sample;
-                          }
-                          return mean;
-                        }),
-                    samples);
-
-  // define the node storing the standard deviation of the samples
-  auto samplesStdDev = flow.makeNode(
-      "SamplesStdDev",
-      std::function<float(const std::vector<int> &, const float &)>(
-          [](const std::vector<int> &samples, const float &mean) {
-            float variance = 0.f;
-            float coeff = 1.f / static_cast<float>(samples.size());
-            float diff;
-            for (const auto &sample : samples) {
-              diff = (sample - mean);
-              variance += coeff * diff * diff;
-            }
-            return sqrtf(variance);
-          }),
-      samples, samplesMean);
-
-  // update the source to trigger the flow update
-  flow.updateFlow(samplesNumber.getName(),
-                  std::make_unique<std::size_t>(100000));
-  // wait of the update to be completed
+  // set the inputs and update the flow
+  flow.updateFlow(first_text, std::make_unique<std::string>(
+                                  std::string(SAMPLE_PATH) + first_text));
   flow.waitUpdateComplete();
-  std::cout << "Mean: " << copyValue(samplesMean)
-            << "   Std deviation: " << copyValue(samplesStdDev) << std::endl;
-
-  // update the source with a bad input will lead to exception throw inside the
-  // flow update
-  flow.updateFlow(samplesNumber.getName(), std::make_unique<std::size_t>(0));
-  flow.waitUpdateComplete();
-  if (samplesMean.isException()) {
-    try {
-      std::rethrow_exception(samplesMean.getException());
-    } catch (const std::exception &e) {
-      std::cout << "samplesMean contains exception: " << e.what() << std::endl;
-    }
-  }
-  if (samplesStdDev.isException()) {
-    try {
-      std::rethrow_exception(samplesStdDev.getException());
-    } catch (const std::exception &e) {
-      std::cout << "samplesStdDev contains exception: " << e.what()
-                << std::endl;
-    }
-  }
 
   return EXIT_SUCCESS;
 }

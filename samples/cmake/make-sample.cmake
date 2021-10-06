@@ -13,5 +13,10 @@ function(MAKE_SAMPLE NAME)
 		${CMAKE_CURRENT_SOURCE_DIR}/src/
 	)
 
+	target_compile_definitions(${NAME}
+	PUBLIC
+    	-DSAMPLE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/"
+	)
+
 	install(TARGETS ${NAME})
 endfunction()
