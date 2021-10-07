@@ -157,7 +157,7 @@ int main() {
             }
             return mixed;
           }),
-      first_content, second_text);
+      first_content, second_content);
 
   // set the inputs and update the flow
   flow.updateFlow(first_text, std::make_unique<std::string>(
