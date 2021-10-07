@@ -92,8 +92,11 @@ public:
   }
 };
 
-// using FlowTest3 = FlowTest<3>;
-// TEST_F(FlowTest3, layers_size_3) { EXPECT_GE(update(1), update(4)); }
+ using FlowTest3 = FlowTest<3>;
+ TEST_F(FlowTest3, layers_size_3) { 
+     update(1);
+    //EXPECT_GE(update(1), update(4)); 
+ }
 
 // using FlowTest5 = FlowTest<5>;
 // TEST_F(FlowTest5, layers_size_5) { EXPECT_GE(update(1), update(4)); }

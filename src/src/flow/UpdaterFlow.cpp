@@ -144,6 +144,7 @@ static const std::size_t MAX_THREADS = getThreadsAvailability();
 void UpdaterFlow::setThreadsForUpdate(const std::size_t threads) {
   if (0 == threads) {
     threadsForUpdate = MAX_THREADS;
+    return;
   }
   threadsForUpdate = threads;
 }
