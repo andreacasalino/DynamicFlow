@@ -5,24 +5,17 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#ifndef FLOW_EVALUATE_CAPABLE_H
-#define FLOW_EVALUATE_CAPABLE_H
+#pragma once
 
 namespace flw {
 
-    enum EvaluationResult {
-        SUCCESS,
-        NOT_READY,
-        BLOCKING_EXCEPTION
-    };
+enum EvaluationResult { SUCCESS, NOT_READY, BLOCKING_EXCEPTION };
 
-    class EvaluateCapable {
-    public:
-        virtual ~EvaluateCapable() = default;
+class EvaluateCapable {
+public:
+  virtual ~EvaluateCapable() = default;
 
-        virtual EvaluationResult evaluate() = 0;
-    };
+  virtual EvaluationResult evaluate() = 0;
+};
 
-}
-
-#endif
+} // namespace flw

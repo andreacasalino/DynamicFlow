@@ -5,29 +5,25 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#ifndef FLOW_VALUE_STORER_H
-#define FLOW_VALUE_STORER_H
+#pragma once
 
+#include <atomic>
 #include <components/ValueOrException.hpp>
 #include <mutex>
-#include <atomic>
 
 namespace flw {
 
-    template<typename T>
-    class ValueStorer {
-    public:
-        virtual ~ValueStorer() = default;
+template <typename T> class ValueStorer {
+public:
+  virtual ~ValueStorer() = default;
 
-        mutable std::mutex valueMtx;
-        ValueOrException<T> value;
+  mutable std::mutex valueMtx;
+  ValueOrException<T> value;
 
-        std::atomic<std::size_t> generations = std::atomic<std::size_t>{0};
+  std::atomic<std::size_t> generations = std::atomic<std::size_t>{0};
 
-    protected:
-        ValueStorer() = default;
-    };
+protected:
+  ValueStorer() = default;
+};
 
-}
-
-#endif
+} // namespace flw

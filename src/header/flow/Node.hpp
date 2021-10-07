@@ -5,8 +5,7 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#ifndef FLOW_NODE_H
-#define FLOW_NODE_H
+#pragma once
 
 #include <components/DescendantsAware.hpp>
 #include <components/Evaluator.hpp>
@@ -15,35 +14,24 @@
 
 namespace flw {
 
-class ValueAwareExtractor {
-public:
-  template <typename ValueAwareT>
-  const auto *extract(const ValueAwareT &subject) const {
-    return subject.storer.get();
-  }
-};
-
 template <typename T, typename... Ts>
 class Node : public FlowEntity,
              public DescendantsAware,
-             public Evaluator<T, Ts...>,
-             public ValueAwareExtractor {
-  friend class EntityCreator;
+             public Evaluator<T, Ts...> {
+public:
+  template <typename... Values>
+  Node(const std::string &name,
+       const std::function<T(const Ts &...)> &evaluation,
+       const Values &...ancestors)
+      : Node(name, evaluation) {
+    bindSubscribeHandlers<0, Values...>(ancestors...);
+  };
 
 protected:
   Node(const std::string &name,
        const std::function<T(const Ts &...)> &evaluation)
       : FlowEntity(name), Evaluator<T, Ts...>(evaluation) {}
 
-  template <typename... Values>
-  Node(const std::string &name,
-       const std::function<T(const Ts &...)> &evaluation,
-       const Values &...handlers)
-      : Node(name, evaluation) {
-    bindSubscribeHandlers<0, Values...>(handlers...);
-  };
-
-protected:
   template <typename... Values>
   void subscribe(const DescendantsAware &ancestor, const Values &...ancestors) {
     subscribe(ancestor);
@@ -55,22 +43,17 @@ protected:
   };
 
   template <std::size_t Index, typename Value, typename... Values>
-  void bindSubscribeHandlers(const Value &handler, const Values &...handlers) {
-    bindSubscribeHandlers<Index, Value>(handler);
-    bindSubscribeHandlers<Index + 1, Values...>(handlers...);
+  void bindSubscribeHandlers(const Value &ancestor,
+                             const Values &...ancestors) {
+    bindSubscribeHandlers<Index, Value>(ancestor);
+    bindSubscribeHandlers<Index + 1, Values...>(ancestors...);
   }
 
   template <std::size_t Index, typename Value>
-  void bindSubscribeHandlers(const Value &handler) {
-    const auto *storer = extract(handler);
-    this->template bind<Index>(*storer);
-
-    const DescendantsAware *asDescAware =
-        dynamic_cast<const DescendantsAware *>(storer);
-    subscribe(*asDescAware);
+  void bindSubscribeHandlers(const Value &ancestor) {
+    this->template bind<Index>(ancestor);
+    subscribe(ancestor);
   };
 };
 
 } // namespace flw
-
-#endif

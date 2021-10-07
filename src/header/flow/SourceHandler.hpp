@@ -5,8 +5,7 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#ifndef FLOW_SOURCE_HANDLER_H
-#define FLOW_SOURCE_HANDLER_H
+#pragma once
 
 #include <components/ValueAware.hpp>
 #include <flow/Source.hpp>
@@ -14,12 +13,9 @@
 namespace flw {
 
 template <typename T> class SourceHandler : public ValueAware<T> {
-  friend class EntityCreator;
-  friend class UpdateCapable;
-
 public:
-  SourceHandler(std::shared_ptr<Source<T>> sourceImpl)
-      : ValueAware<T>(sourceImpl) {}
+  SourceHandler(const std::string &name)
+      : ValueAware<T>(std::make_shared<Source<T>>(name)) {}
 
   SourceHandler(const SourceHandler<T> &o) : ValueAware<T>(o){};
   SourceHandler<T> &operator==(const SourceHandler<T> &o) {
@@ -34,5 +30,3 @@ private:
   };
 };
 } // namespace flw
-
-#endif

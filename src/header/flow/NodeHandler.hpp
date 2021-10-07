@@ -5,8 +5,7 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#ifndef FLOW_NODE_HANDLER_H
-#define FLOW_NODE_HANDLER_H
+#pragma once
 
 #include <components/ValueAware.hpp>
 #include <flow/Node.hpp>
@@ -14,11 +13,13 @@
 namespace flw {
 
 template <typename T, typename... Ts> class NodeHandler : public ValueAware<T> {
-  friend class EntityCreator;
-
 public:
-  NodeHandler(std::shared_ptr<Node<T, Ts...>> nodeImpl)
-      : ValueAware<T>(nodeImpl) {}
+  template <typename... Values>
+  NodeHandler(const std::string &name,
+              const std::function<T(const Ts &...)> &evaluation,
+              const Values &...handlers)
+      : ValueAware<T>(std::make_shared<Node<T, Ts...>>(
+            name, evaluation, getStorer(handlers)...)){};
 
   NodeHandler(const NodeHandler<T> &o) : ValueAware<T>(o){};
   NodeHandler<T> &operator==(const NodeHandler<T> &o) {
@@ -28,5 +29,3 @@ public:
 };
 
 } // namespace flw
-
-#endif

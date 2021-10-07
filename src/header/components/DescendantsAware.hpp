@@ -5,22 +5,19 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#ifndef FLOW_DESCENDANTS_AWARE_H
-#define FLOW_DESCENDANTS_AWARE_H
+#pragma once
 
 #include <components/EvaluateCapable.h>
 #include <list>
 
 namespace flw {
 
-    class DescendantsAware {
-    public:
-        mutable std::list<EvaluateCapable*> descendants;
+class DescendantsAware {
+public:
+  mutable std::list<EvaluateCapable *> descendants;
 
-    protected:
-        DescendantsAware() = default;
-    };
+protected:
+  DescendantsAware() = default;
+};
 
-}
-
-#endif
+} // namespace flw
