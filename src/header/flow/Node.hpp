@@ -8,67 +8,69 @@
 #ifndef FLOW_NODE_H
 #define FLOW_NODE_H
 
-#include <flow/FlowEntity.h>
-#include <components/ValueAware.hpp>
 #include <components/DescendantsAware.hpp>
 #include <components/Evaluator.hpp>
+#include <components/ValueAware.hpp>
+#include <flow/FlowEntity.h>
 
 namespace flw {
 
-    class ValueAwareExtractor {
-    public:
-        template<typename ValueAwareT>
-        const auto* extract(const ValueAwareT& subject) const {
-            return subject.storer.get();
-        }
-    };
+class ValueAwareExtractor {
+public:
+  template <typename ValueAwareT>
+  const auto *extract(const ValueAwareT &subject) const {
+    return subject.storer.get();
+  }
+};
 
-    template<typename T, typename ... Ts>
-    class Node
-        : public FlowEntity
-        , public DescendantsAware
-        , public Evaluator<T, Ts...>
-        , public ValueAwareExtractor {
-        friend class Flow;
-    protected:
-        Node(const std::string& name, const std::function<T(const Ts & ...)>& evaluation) 
-            : FlowEntity(name)
-            , Evaluator<T, Ts...>(evaluation) {
-        }
+template <typename T, typename... Ts>
+class Node : public FlowEntity,
+             public DescendantsAware,
+             public Evaluator<T, Ts...>,
+             public ValueAwareExtractor {
+  friend class EntityCreator;
 
-        template<typename ... Values>
-        Node(const std::string& name, const std::function<T(const Ts & ...)>& evaluation, const Values& ... handlers)
-            : Node(name, evaluation) {
-            bindSubscribeHandlers<0, Values...>(handlers...);
-        };
+protected:
+  Node(const std::string &name,
+       const std::function<T(const Ts &...)> &evaluation)
+      : FlowEntity(name), Evaluator<T, Ts...>(evaluation) {}
 
-    protected:
-        template<typename ... Values>
-        void subscribe(const DescendantsAware& ancestor, const Values& ... ancestors) {
-            subscribe(ancestor);
-            subscribe(ancestors...);
-        };
+  template <typename... Values>
+  Node(const std::string &name,
+       const std::function<T(const Ts &...)> &evaluation,
+       const Values &...handlers)
+      : Node(name, evaluation) {
+    bindSubscribeHandlers<0, Values...>(handlers...);
+  };
 
-        void subscribe(const DescendantsAware& ancestor) {
-            ancestor.descendants.push_back(this);
-        };
+protected:
+  template <typename... Values>
+  void subscribe(const DescendantsAware &ancestor, const Values &...ancestors) {
+    subscribe(ancestor);
+    subscribe(ancestors...);
+  };
 
-        template<std::size_t Index, typename Value, typename ... Values>
-        void bindSubscribeHandlers(const Value& handler, const Values& ... handlers) {
-            bindSubscribeHandlers<Index, Value>(handler);
-            bindSubscribeHandlers<Index + 1, Values...>(handlers...);
-        }
+  void subscribe(const DescendantsAware &ancestor) {
+    ancestor.descendants.push_back(this);
+  };
 
-        template<std::size_t Index, typename Value>
-        void bindSubscribeHandlers(const Value& handler) {
-            const auto* storer = extract(handler);
-            this->template bind<Index>(*storer);
+  template <std::size_t Index, typename Value, typename... Values>
+  void bindSubscribeHandlers(const Value &handler, const Values &...handlers) {
+    bindSubscribeHandlers<Index, Value>(handler);
+    bindSubscribeHandlers<Index + 1, Values...>(handlers...);
+  }
 
-            const DescendantsAware* asDescAware = dynamic_cast<const DescendantsAware*>(storer);
-            subscribe(*asDescAware);
-        };
-    };
+  template <std::size_t Index, typename Value>
+  void bindSubscribeHandlers(const Value &handler) {
+    const auto *storer = extract(handler);
+    this->template bind<Index>(*storer);
 
-}
+    const DescendantsAware *asDescAware =
+        dynamic_cast<const DescendantsAware *>(storer);
+    subscribe(*asDescAware);
+  };
+};
+
+} // namespace flw
 
 #endif

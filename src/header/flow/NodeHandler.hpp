@@ -13,24 +13,20 @@
 
 namespace flw {
 
-    template<typename T, typename ... Ts>
-    class NodeHandler
-        : public ValueAware<T> {
-        friend class Flow;
-    public:
-        NodeHandler(std::shared_ptr<Node<T, Ts...>> nodeImpl)
-            : ValueAware<T>(nodeImpl) {
-        }
+template <typename T, typename... Ts> class NodeHandler : public ValueAware<T> {
+  friend class EntityCreator;
 
-        NodeHandler(const NodeHandler<T>& o)
-            : ValueAware<T>(o) {
-        };
-        NodeHandler<T>& operator==(const NodeHandler<T>& o) {
-            static_cast<ValueAware<T>&>(*this) = static_cast<const ValueAware<T>&>(o);
-            return *this;
-        };
-    };
+public:
+  NodeHandler(std::shared_ptr<Node<T, Ts...>> nodeImpl)
+      : ValueAware<T>(nodeImpl) {}
 
-}
+  NodeHandler(const NodeHandler<T> &o) : ValueAware<T>(o){};
+  NodeHandler<T> &operator==(const NodeHandler<T> &o) {
+    static_cast<ValueAware<T> &>(*this) = static_cast<const ValueAware<T> &>(o);
+    return *this;
+  };
+};
+
+} // namespace flw
 
 #endif
