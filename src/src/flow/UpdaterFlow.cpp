@@ -5,8 +5,9 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#include <flow/UpdateCapable.h>
+#include <flow/UpdaterFlow.h>
 #include <omp.h>
+#include <vector>
 
 namespace flw {
 
@@ -81,34 +82,21 @@ void updateNodesParallel(std::set<EvaluateCapable *> &toUpdate,
 }
 } // namespace
 
-std::set<EvaluateCapable *> UpdateCapable::computeUpdateRequired(
-    const std::set<EvaluateCapable *> &initialNodes) {
-  std::set<EvaluateCapable *> open = initialNodes, close;
-  while (!open.empty()) {
-    auto *front = *open.begin();
-    open.erase(open.begin());
-    DescendantsAware *impl = dynamic_cast<DescendantsAware *>(front);
-    for (auto *d : impl->descendants) {
-      open.emplace(d);
+void UpdaterFlow::updateFlow() {
+  std::lock_guard<std::mutex> updateLock(updateValuesMtx);
+  busy = true;
+  if (!requiringUpdate.empty()) {
+    const std::size_t threads = threadsForUpdate;
+    if (1 == threads) {
+      updateNodesSerial(requiringUpdate);
+    } else {
+      updateNodesParallel(requiringUpdate, threads);
     }
-    close.emplace(front);
   }
-  return close;
+  busy = false;
 }
 
-void UpdateCapable::updateNodes(std::set<EvaluateCapable *> toUpdate) {
-  if (toUpdate.empty()) {
-    return;
-  }
-  const std::size_t threads = threadsForUpdate;
-  if (1 == threads) {
-    updateNodesSerial(toUpdate);
-  } else {
-    updateNodesParallel(toUpdate, threads);
-  }
-}
-
-bool UpdateCapable::isBusy() const { return busy; }
+bool UpdaterFlow::isUpdatingFlow() const { return busy; }
 
 namespace {
 
@@ -143,17 +131,17 @@ std::size_t getThreadsAvailability() {
 
 } // namespace
 
-void UpdateCapable::waitUpdateComplete(
+void UpdaterFlow::waitUpdateComplete(
     const std::chrono::microseconds &maxWaitTime) const {
   if (0 == maxWaitTime.count()) {
-    waitInfinite([this]() { return this->isBusy(); });
+    waitInfinite([this]() { return this->isUpdatingFlow(); });
   } else {
-    waitFinite([this]() { return this->isBusy(); }, maxWaitTime);
+    waitFinite([this]() { return this->isUpdatingFlow(); }, maxWaitTime);
   }
 }
 
 static const std::size_t MAX_THREADS = getThreadsAvailability();
-void UpdateCapable::setThreadsForUpdate(const std::size_t threads) {
+void UpdaterFlow::setThreadsForUpdate(const std::size_t threads) {
   if (0 == threads) {
     threadsForUpdate = MAX_THREADS;
   }

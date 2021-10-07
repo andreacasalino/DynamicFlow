@@ -9,12 +9,22 @@
 
 #include <flow/EntityCreator.hpp>
 #include <flow/EntityFinder.hpp>
-#include <flow/UpdateCapable.h>
+#include <flow/UpdaterFlow.h>
+#include <flow/UpdaterSources.h>
 
 namespace flw {
 
-class Flow : public EntityCreator, public EntityFinder, public UpdateCapable {
+class Flow : public EntityCreator,
+             public EntityFinder,
+             public UpdaterSources,
+             public UpdaterFlow {
 public:
   Flow() = default;
+
+  template <typename... UpdateInputs>
+  void updateSourcesAndFlow(UpdateInputs &&...inputs) {
+    updateSources(std::forward<UpdateInputs>(inputs)...);
+    updateFlow();
+  }
 };
 } // namespace flw
