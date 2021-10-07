@@ -13,12 +13,15 @@
 
 namespace flw {
 
-class EntityCreator : virtual public EntityAware {
+class EntityCreator : virtual public EntityAware,
+                      public SourceMaker,
+                      public NodeMaker,
+                      public ValueAwareStorerExtractor {
 public:
   template <typename T> SourceHandler<T> makeSource(const std::string &name) {
     std::lock_guard<std::mutex> creationLock(entityCreationMtx);
     checkName(name);
-    Source<T> *impl = new Source<T>(name);
+    Source<T> *impl = this->template makeSource<T>(name);
     std::shared_ptr<Source<T>> source;
     source.reset(impl);
     sources.emplace(source->getName(), source);
@@ -34,7 +37,8 @@ public:
     std::lock_guard<std::mutex> creationLock(entityCreationMtx);
     checkName(name);
     checkIsInternalEntity(handlers...);
-    Node<T, Ts...> *impl = new Node<T, Ts...>(name, evaluation, handlers...);
+    Node<T, Ts...> *impl = this->template makeNode<T, Ts...>(
+        name, evaluation, extractStorer(handlers)...);
     std::shared_ptr<Node<T, Ts...>> node;
     node.reset(impl);
     nodes.emplace(node->getName(), node);

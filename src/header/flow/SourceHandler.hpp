@@ -13,9 +13,10 @@
 namespace flw {
 
 template <typename T> class SourceHandler : public ValueAware<T> {
+  friend class SourceHandlerResetter;
+
 public:
-  SourceHandler(const std::string &name)
-      : ValueAware<T>(std::make_shared<Source<T>>(name)) {}
+  SourceHandler(std::shared_ptr<Source<T>> impl) : ValueAware<T>(impl) {}
 
   SourceHandler(const SourceHandler<T> &o) : ValueAware<T>(o){};
   SourceHandler<T> &operator==(const SourceHandler<T> &o) {
@@ -29,4 +30,13 @@ private:
     sourcePt->reset(std::move(newValue));
   };
 };
+
+class SourceHandlerResetter {
+protected:
+  template <typename T>
+  void reset(std::unique_ptr<T> newValue, SourceHandler<T> &subject) {
+    subject.reset(std::move(newValue));
+  };
+};
+
 } // namespace flw

@@ -18,7 +18,9 @@ template <typename T, typename... Ts>
 class Node : public FlowEntity,
              public DescendantsAware,
              public Evaluator<T, Ts...> {
-public:
+  friend class NodeMaker;
+
+protected:
   template <typename... Values>
   Node(const std::string &name,
        const std::function<T(const Ts &...)> &evaluation,
@@ -27,7 +29,6 @@ public:
     bindSubscribeHandlers<0, Values...>(ancestors...);
   };
 
-protected:
   Node(const std::string &name,
        const std::function<T(const Ts &...)> &evaluation)
       : FlowEntity(name), Evaluator<T, Ts...>(evaluation) {}
@@ -53,6 +54,14 @@ protected:
   void bindSubscribeHandlers(const Value &ancestor) {
     this->template bind<Index>(ancestor);
     subscribe(ancestor);
+  };
+};
+
+class NodeMaker {
+protected:
+  template <typename NodeT, typename... Values>
+  NodeT *makeNode(Values &&...values) const {
+    return new NodeT(std::forward<Values...>(std::move(values))...);
   };
 };
 

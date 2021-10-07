@@ -14,12 +14,7 @@ namespace flw {
 
 template <typename T, typename... Ts> class NodeHandler : public ValueAware<T> {
 public:
-  template <typename... Values>
-  NodeHandler(const std::string &name,
-              const std::function<T(const Ts &...)> &evaluation,
-              const Values &...handlers)
-      : ValueAware<T>(std::make_shared<Node<T, Ts...>>(
-            name, evaluation, getStorer(handlers)...)){};
+  NodeHandler(std::shared_ptr<Node<T, Ts...>> impl) : ValueAware<T>(impl) {}
 
   NodeHandler(const NodeHandler<T> &o) : ValueAware<T>(o){};
   NodeHandler<T> &operator==(const NodeHandler<T> &o) {

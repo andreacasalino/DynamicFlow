@@ -13,6 +13,8 @@
 namespace flw {
 
 template <typename T> class ValueAware {
+  friend class ValueAwareStorerExtractor;
+
 public:
   virtual ~ValueAware() = default;
 
@@ -49,7 +51,11 @@ public:
   }
 
 protected:
-  ValueAware(const std::shared_ptr<ValueStorer<T>> &storer) : storer(storer){};
+  ValueAware(const std::shared_ptr<ValueStorer<T>> &storer) : storer(storer) {
+    if (nullptr == this->storer) {
+      throw Error("Empty storer");
+    }
+  };
 
   ValueAware(const ValueAware<T> &o) : ValueAware(o.storer){};
   ValueAware<T> &operator==(const ValueAware<T> &o) {
@@ -57,12 +63,14 @@ protected:
     return *this;
   }
 
+  std::shared_ptr<ValueStorer<T>> storer;
+};
+
+class ValueAwareStorerExtractor {
   template <typename ValueAwareT>
-  static const auto &getStorer(const ValueAwareT &subject) {
+  static const auto &extractStorer(const ValueAwareT &subject) {
     return *subject.storer.get();
   };
-
-  std::shared_ptr<ValueStorer<T>> storer;
 };
 
 template <typename T> T copyValue(const ValueAware<T> &entity) {
