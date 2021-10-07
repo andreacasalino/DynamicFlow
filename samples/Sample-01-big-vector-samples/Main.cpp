@@ -65,17 +65,15 @@ int main() {
       samples, samplesMean);
 
   // update the source to trigger the flow update
-  flow.updateFlow(samplesNumber.getName(),
-                  std::make_unique<std::size_t>(100000));
-  // wait of the update to be completed
-  flow.waitUpdateComplete();
+  flow.updateSourcesAndFlow(samplesNumber.getName(),
+                            std::make_unique<std::size_t>(100000));
   std::cout << "Mean: " << copyValue(samplesMean)
             << "   Std deviation: " << copyValue(samplesStdDev) << std::endl;
 
   // update the source with a bad input will lead to exception throw inside the
   // flow update
-  flow.updateFlow(samplesNumber.getName(), std::make_unique<std::size_t>(0));
-  flow.waitUpdateComplete();
+  flow.updateSourcesAndFlow(samplesNumber.getName(),
+                            std::make_unique<std::size_t>(0));
   if (samplesMean.isException()) {
     try {
       std::rethrow_exception(samplesMean.getException());

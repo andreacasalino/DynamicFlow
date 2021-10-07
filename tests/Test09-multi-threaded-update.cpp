@@ -68,10 +68,12 @@ public:
 
   std::chrono::milliseconds update(std::size_t threads) {
     this->setThreadsForUpdate(threads);
+    for (std::size_t s = 0; s < (Layers + 1); ++s) {
+      this->template updateSource<int>(make_source_name(s),
+                                       std::make_unique<int>(0));
+    }
     auto tic = std::chrono::high_resolution_clock::now();
-    throw flw::Error("Update somehow the sources");
-    // this->updateFlow(...); // pass all zeros for sources
-    this->waitUpdateComplete();
+    this->updateFlow();
     std::chrono::milliseconds elapsed =
         std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::high_resolution_clock::now() - tic);

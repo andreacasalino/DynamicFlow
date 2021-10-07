@@ -160,8 +160,9 @@ int main() {
       first_content, second_content);
 
   // set the inputs and update the flow
-  flow.updateFlow(first_text, std::make_unique<std::string>(
-                                  std::string(SAMPLE_PATH) + first_text));
+  flow.updateSourcesAndFlow(
+      first_text,
+      std::make_unique<std::string>(std::string(SAMPLE_PATH) + first_text));
   flow.waitUpdateComplete();
   show_text_analysis_result(flow, first_text);
   std::cout << "---------------------------------------------------------------"

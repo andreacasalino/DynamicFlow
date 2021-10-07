@@ -20,7 +20,7 @@ void UpdaterSources::expandRequiringUpdate() {
     }
     close.emplace(front);
   }
-  requiringUpdate = std::move(open);
+  requiringUpdate = std::move(close);
 }
 
 } // namespace flw
