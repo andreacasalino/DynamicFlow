@@ -67,8 +67,14 @@ protected:
 };
 
 class ValueAwareStorerExtractor {
+protected:
   template <typename ValueAwareT>
   static const auto &extractStorer(const ValueAwareT &subject) {
+    return *subject.storer.get();
+  };
+
+  template <typename ValueAwareT>
+  static auto &extractStorer(ValueAwareT &subject) {
     return *subject.storer.get();
   };
 };

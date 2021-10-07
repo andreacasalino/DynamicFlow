@@ -21,7 +21,7 @@ public:
   template <typename T> SourceHandler<T> makeSource(const std::string &name) {
     std::lock_guard<std::mutex> creationLock(entityCreationMtx);
     checkName(name);
-    Source<T> *impl = this->template makeSource<T>(name);
+    Source<T> *impl = this->template makeSource_<T>(name);
     std::shared_ptr<Source<T>> source;
     source.reset(impl);
     sources.emplace(source->getName(), source);
@@ -37,7 +37,7 @@ public:
     std::lock_guard<std::mutex> creationLock(entityCreationMtx);
     checkName(name);
     checkIsInternalEntity(handlers...);
-    Node<T, Ts...> *impl = this->template makeNode<T, Ts...>(
+    Node<T, Ts...> *impl = this->template makeNode_<Node<T, Ts...>>(
         name, evaluation, extractStorer(handlers)...);
     std::shared_ptr<Node<T, Ts...>> node;
     node.reset(impl);
@@ -63,7 +63,7 @@ protected:
   template <typename EntityT>
   void checkIsInternalEntity(const EntityT &entity) {
     const FlowEntity *entityPtr =
-        dynamic_cast<const FlowEntity *>(entity.storer.get());
+        dynamic_cast<const FlowEntity *>(&extractStorer(entity));
     if (nullptr == entityPtr) {
       throw Error("Not a valid entity");
     }

@@ -13,7 +13,9 @@
 
 namespace flw {
 
-class UpdateCapable : virtual public EntityAware, public SourceHandlerResetter {
+class UpdateCapable : virtual public EntityAware,
+                      public SourceHandlerResetter,
+                      public ValueAwareStorerExtractor {
 public:
   template <typename... UpdateInputs>
   void updateFlow(UpdateInputs &&...inputs) {
@@ -52,7 +54,7 @@ protected:
                     std::unique_ptr<T> new_value) {
     SourceHandler<T> handler = this->template findSource_<T>(source_name);
     this->reset(std::move(new_value), handler);
-    Source<T> *impl = dynamic_cast<Source<T> *>(handler.storer.get());
+    Source<T> *impl = dynamic_cast<Source<T> *>(&extractStorer(handler));
     for (auto *d : impl->descendants) {
       toUpdate.emplace(d);
     }

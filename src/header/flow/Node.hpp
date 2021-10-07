@@ -53,15 +53,21 @@ protected:
   template <std::size_t Index, typename Value>
   void bindSubscribeHandlers(const Value &ancestor) {
     this->template bind<Index>(ancestor);
-    subscribe(ancestor);
+
+    const DescendantsAware *asDescAware =
+        dynamic_cast<const DescendantsAware *>(&ancestor);
+    if (nullptr == asDescAware) {
+      throw Error("Not a DescendantsAware");
+    }
+    subscribe(*asDescAware);
   };
 };
 
 class NodeMaker {
 protected:
   template <typename NodeT, typename... Values>
-  NodeT *makeNode(Values &&...values) const {
-    return new NodeT(std::forward<Values...>(std::move(values))...);
+  NodeT *makeNode_(Values &&...values) const {
+    return new NodeT(std::forward<Values>(values)...);
   };
 };
 

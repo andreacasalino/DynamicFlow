@@ -33,8 +33,8 @@ protected:
 class SourceMaker {
 protected:
   template <typename T, typename... Values>
-  Source<T> *makeNode(Values &&...values) const {
-    return new Source<T>(std::forward<Values...>(std::move(values))...);
+  Source<T> *makeSource_(Values &&...values) const {
+    return new Source<T>(std::forward<Values>(values)...);
   };
 };
 
