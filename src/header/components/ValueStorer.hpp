@@ -13,7 +13,7 @@
 
 namespace flw {
 
-template <typename T> class ValueStorer {
+template <typename T> class ValueStorer : public ValueOrExceptionAware {
 public:
   virtual ~ValueStorer() = default;
 
@@ -21,6 +21,20 @@ public:
   ValueOrException<T> value;
 
   std::atomic<std::size_t> generations = std::atomic<std::size_t>{0};
+
+  bool isValue() const override {
+    std::lock_guard<std::mutex> lock(valueMtx);
+    return value.isValue();
+  };
+  bool isException() const override {
+    std::lock_guard<std::mutex> lock(valueMtx);
+    return value.isException();
+  };
+
+  std::exception_ptr getException() const override {
+    std::lock_guard<std::mutex> lock(valueMtx);
+    return value.getException();
+  };
 
 protected:
   ValueStorer() = default;

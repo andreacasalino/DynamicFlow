@@ -7,30 +7,28 @@
 
 #pragma once
 
-#include <ostream>
 #include <flow/EntityAware.hpp>
 #include <flow/Flow.h>
+#include <ostream>
 
 namespace flw {
-    class PrintCapable
-            : virtual public EntityAware {
-    public:
-        virtual void print(std::ostream& stream) const = 0;
-    };
+class PrintCapable : virtual public EntityAware {
+public:
+  virtual void print(std::ostream &stream) const = 0;
+};
 
-    class PrintBasic
-            : public PrintCapable {
-    public:
-        void print(std::ostream& stream) const override;
-    };
+class PrintBasic : public PrintCapable {
+public:
+  void print(std::ostream &stream) const override;
+};
 
-    template<typename  FlowT = Flow, typename  PrintableT = PrintBasic>
-    class PrintableFlow
-            : public FlowT
-            , public PrintableT {
-    public:
-        PrintableFlow() = default;
-    };
-}
+template <typename FlowT = Flow, typename PrintableT = PrintBasic>
+class PrintableFlow : public FlowT, public PrintableT {
+public:
+  PrintableFlow() = default;
+};
 
-std::ostream& operator<<(std::ostream& stream, flw::PrintCapable& subject);
+void log(const std::string &fileName, flw::PrintCapable &subject);
+} // namespace flw
+
+std::ostream &operator<<(std::ostream &stream, flw::PrintCapable &subject);
