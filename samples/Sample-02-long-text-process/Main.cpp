@@ -1,3 +1,4 @@
+#include <FlowLogger.h>
 #include <TextIO.h>
 #include <WordsParser.h>
 #include <flow/Printer.h>
@@ -134,55 +135,65 @@ int main() {
   // build the flow
   flw::PrintableFlow flow;
 
-  // try to read and analyze an inexistent file
+  // import the first text
   make_text_analysis_nodes(flow, FIRST_TEXT);
-  // log the flow entities
-  flw::log("Log", flow);
-  // // set the inputs and update the flow
-  // flow.updateSourcesAndFlow(FIRST_TEXT,
-  //                           std::make_unique<std::string>(FIRST_TEXT));
-  // show_text_analysis_result(flow, FIRST_TEXT);
-  // sep();
+  FlowLogger::log(flow);
+  // set the inputs and update the flow
+  flow.updateSourcesAndFlow(FIRST_TEXT,
+                            std::make_unique<std::string>(FIRST_TEXT));
+  show_text_analysis_result(flow, FIRST_TEXT);
+  FlowLogger::log(flow);
+  sep();
 
-  //  make_text_analysis_nodes(flow, first_text);
-  //  make_text_analysis_nodes(flow, second_text);
-  //
-  ////  auto first_content = flow.findNode<std::list<std::string>, std::string>(
-  ////      first_text + std::string("-content"));
-  ////  auto second_content = flow.findNode<std::list<std::string>,
-  /// std::string>( /      second_text + std::string("-content")); /  auto
-  /// combined_node = flow.makeNode( /      "combined-text", /
-  /// std::function<std::list<std::string>(const std::list<std::string> &, /
-  /// const std::list<std::string> &)>( /          [](const
-  /// std::list<std::string> &contentA, /             const
-  /// std::list<std::string> &contentB) { /            std::list<std::string>
-  /// mixed; /            auto itA = contentA.begin(); /            auto itB =
-  /// contentB.begin(); /            while ((itA != contentA.end()) && (itB !=
-  /// contentB.end())) { /              if (itA != contentA.end()) { /
-  /// mixed.push_back(*itA); /                ++itA; /              } / if (itB
-  ///!= contentB.end()) { /                mixed.push_back(*itB); / ++itB; / }
-  ////            }
-  ////            return mixed;
-  ////          }),
-  ////      first_content, second_content);
-  //
-  //  // set the inputs and update the flow
-  //  flow.updateSourcesAndFlow(
-  //      first_text,
-  //      std::make_unique<std::string>(std::string(SAMPLE_PATH) + first_text));
-  //  show_text_analysis_result(flow, first_text);
-  //  std::cout <<
-  //  "---------------------------------------------------------------"
-  //            << std::endl;
-  //  show_text_analysis_result(flow, second_text);
-  //
-  //
-  ////  combined_node.useValue([](const std::list<std::string> &lines) {
-  ////    std::ofstream stream("Combined");
-  ////    for (const auto &line : lines) {
-  ////      stream << line << std::endl;
-  ////    }
-  ////  });
+  // import the second text
+  make_text_analysis_nodes(flow, SECOND_TEXT);
+  FlowLogger::log(flow);
+  // set the inputs and update the flow
+  flow.updateSourcesAndFlow(SECOND_TEXT,
+                            std::make_unique<std::string>(SECOND_TEXT));
+  show_text_analysis_result(flow, SECOND_TEXT);
+  FlowLogger::log(flow);
+  sep();
+
+  // create a text that combines the other two
+  auto first_content = flow.findNode<std::list<std::string>, std::string>(
+      FIRST_TEXT + std::string("-content"));
+  auto second_content = flow.findNode<std::list<std::string>, std::string>(
+      SECOND_TEXT + std::string("-content"));
+  auto combined_node = flow.makeNode(
+      "combined-text",
+      std::function<std::list<std::string>(const std::list<std::string> &,
+                                           const std::list<std::string> &)>(
+          [](const std::list<std::string> &contentA,
+             const std::list<std::string> &contentB) {
+            std::list<std::string> mixed;
+            auto itA = contentA.begin();
+            auto itB = contentB.begin();
+            while ((itA != contentA.end()) && (itB != contentB.end())) {
+              if (itA != contentA.end()) {
+                mixed.push_back(*itA);
+                ++itA;
+              }
+              if (itB != contentB.end()) {
+                mixed.push_back(*itB);
+                ++itB;
+              }
+            }
+            return mixed;
+          }),
+      first_content, second_content);
+  FlowLogger::log(flow);
+  // re-set the inputs and update the flow
+  flow.updateSourcesAndFlow(
+      FIRST_TEXT, std::make_unique<std::string>(FIRST_TEXT), SECOND_TEXT,
+      std::make_unique<std::string>(SECOND_TEXT));
+  show_text_analysis_result(flow, SECOND_TEXT);
+  FlowLogger::log(flow);
+  sep();
+
+  combined_node.useValue([](const std::list<std::string> &lines) {
+    exportText(lines, "CombinedText");
+  });
 
   return EXIT_SUCCESS;
 }
