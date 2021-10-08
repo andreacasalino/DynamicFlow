@@ -104,10 +104,13 @@ public:
 };
 
 using FlowTest5 = FlowTest<5>;
-TEST_F(FlowTest5, layers_size_5) { executeComparison(3); }
+TEST_F(FlowTest5, layers_5) { executeComparison(3); }
 
 using FlowTest7 = FlowTest<7>;
-TEST_F(FlowTest7, layers_size_7) { executeComparison(4); }
+TEST_F(FlowTest7, layers_7) { executeComparison(4); }
+
+using FlowTest10 = FlowTest<10>;
+TEST_F(FlowTest10, layers_10) { executeComparison(4); }
 
 int main(int argc, char *argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
