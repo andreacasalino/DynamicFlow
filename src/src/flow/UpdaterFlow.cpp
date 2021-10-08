@@ -13,6 +13,31 @@ namespace flw {
 
 namespace {
 
+void spread(std::vector<std::set<EvaluateCapable *>> &recipient,
+            std::set<EvaluateCapable *> &donator) {
+  std::size_t k = 0;
+  for (const auto &e : donator) {
+    recipient[k].emplace(e);
+    ++k;
+    if (recipient.size() == k) {
+      k = 0;
+    }
+  }
+  donator.clear();
+};
+
+void gather(std::set<EvaluateCapable *> &recipient,
+            std::vector<std::set<EvaluateCapable *>> &donator) {
+  for (auto &d : donator) {
+    for (const auto &e : d) {
+      recipient.emplace(e);
+    }
+    d.clear();
+  }
+};
+
+// returns true when a deadlock is reached,
+// i.e. none of the element was processe
 bool process(std::set<EvaluateCapable *> &toUpdate) {
   bool isBlocked = true;
   auto it = toUpdate.begin();
@@ -39,30 +64,26 @@ void updateNodesSerial(std::set<EvaluateCapable *> &toUpdate) {
   }
 }
 
-bool areAllTrue(const std::vector<bool> &flags) {
-  for (const auto flag : flags) {
-    if (!flag) {
-      return false;
-    }
-  }
-  return true;
-}
-
 void updateNodesParallel(std::set<EvaluateCapable *> &toUpdate,
                          const std::size_t threads) {
   std::vector<std::set<EvaluateCapable *>> queues;
   queues.resize(threads);
-  std::vector<bool> blockedFlags(threads, false);
+  std::atomic_bool isDeadlock;
   bool stop = false;
 #pragma omp parallel num_threads(static_cast <const int>(threads))
   {
     int thID = omp_get_thread_num();
     if (0 == thID) {
       while (!toUpdate.empty()) {
+        spread(queues, toUpdate);
+        isDeadlock = true;
 #pragma omp barrier
-        blockedFlags[thID] = process(queues[thID]);
+        if (!process(queues[thID])) {
+          isDeadlock = false;
+        }
 #pragma omp barrier
-        if (areAllTrue(blockedFlags)) {
+        gather(toUpdate, queues);
+        if (isDeadlock) {
           break;
         }
       }
@@ -70,11 +91,13 @@ void updateNodesParallel(std::set<EvaluateCapable *> &toUpdate,
 #pragma omp barrier
     } else {
       while (true) {
+#pragma omp barrier
         if (stop) {
           break;
         }
-#pragma omp barrier
-        blockedFlags[thID] = process(queues[thID]);
+        if (!process(queues[thID])) {
+          isDeadlock = false;
+        }
 #pragma omp barrier
       }
     }

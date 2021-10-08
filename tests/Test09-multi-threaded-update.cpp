@@ -66,6 +66,18 @@ public:
     }
   }
 
+  void checkValues() {
+    int expected_value = 2;
+    for (std::size_t l = 0; l < Layers; ++l) {
+      for (std::size_t n = 0; n < Layers - l; ++n) {
+        auto node = this->findNode<int, int, int>(make_node_name(l, n));
+        EXPECT_TRUE(node.isValue());
+        EXPECT_EQ(flw::copyValue(node), expected_value);
+      }
+      expected_value *= 2;
+    }
+  }
+
   std::chrono::milliseconds update(std::size_t threads) {
     this->setThreadsForUpdate(threads);
     for (std::size_t s = 0; s < (Layers + 1); ++s) {
@@ -81,36 +93,21 @@ public:
     return elapsed;
   }
 
-  void checkValues() {
-      int expected_value = 2;
-    for (std::size_t l = 0; l < Layers; ++l) {
-      for (std::size_t n = 0; n < Layers - l; ++n) {
-        auto node = this->findNode<int, int, int>(make_node_name(l, n));
-        EXPECT_TRUE(node.isValue());
-        EXPECT_EQ(flw::copyValue(node), expected_value);
-      }
-      expected_value *= 2;
-    }
-  }
+  void executeComparison(std::size_t threads) {
+    auto serial_time = this->update(1).count();
+    std::cout << "Serial version: " << serial_time << " [ms]" << std::endl;
+    auto parallel_time = this->update(threads).count();
+    std::cout << "Parallel version: " << parallel_time << " [ms]" << std::endl;
+    ;
+    EXPECT_GE(serial_time, parallel_time);
+  };
 };
 
- using FlowTest3 = FlowTest<3>;
- TEST_F(FlowTest3, layers_size_3) { 
-     update(1);
-    //EXPECT_GE(update(1), update(4)); 
- }
+using FlowTest5 = FlowTest<5>;
+TEST_F(FlowTest5, layers_size_5) { executeComparison(3); }
 
- using FlowTest5 = FlowTest<5>;
- TEST_F(FlowTest5, layers_size_5) {
-     update(1);
-     //EXPECT_GE(update(1), update(4)); 
- }
-
- using FlowTest7 = FlowTest<7>;
- TEST_F(FlowTest7, layers_size_7) {
-     update(1);
-     //EXPECT_GE(update(1), update(4)); 
- }
+using FlowTest7 = FlowTest<7>;
+TEST_F(FlowTest7, layers_size_7) { executeComparison(4); }
 
 int main(int argc, char *argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
