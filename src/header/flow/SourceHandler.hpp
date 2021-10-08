@@ -5,37 +5,38 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#ifndef FLOW_SOURCE_HANDLER_H
-#define FLOW_SOURCE_HANDLER_H
+#pragma once
 
 #include <components/ValueAware.hpp>
 #include <flow/Source.hpp>
 
 namespace flw {
 
-    template<typename T>
-    class SourceHandler
-        : public ValueAware<T> {
-        friend class Flow;
-    public:
-        SourceHandler(std::shared_ptr<Source<T>> sourceImpl)
-            : ValueAware<T>(sourceImpl) {
-        }
+template <typename T> class SourceHandler : public ValueAware<T> {
+  friend class SourceHandlerResetter;
 
-        SourceHandler(const SourceHandler<T>& o) 
-            : ValueAware<T>(o) {
-        };
-        SourceHandler<T>& operator==(const SourceHandler<T>& o) {
-            static_cast<ValueAware<T>&>(*this) = static_cast<const ValueAware<T>&>(o);
-            return *this;
-        };
+public:
+  SourceHandler(std::shared_ptr<Source<T>> impl) : ValueAware<T>(impl) {}
 
-    private:
-        void reset(std::unique_ptr<T> newValue) {
-            Source<T>* sourcePt = dynamic_cast<Source<T>*>(this->storer.get());
-            sourcePt->reset(std::move(newValue));
-        };
-    };
-}
+  SourceHandler(const SourceHandler<T> &o) : ValueAware<T>(o){};
+  SourceHandler<T> &operator==(const SourceHandler<T> &o) {
+    static_cast<ValueAware<T> &>(*this) = static_cast<const ValueAware<T> &>(o);
+    return *this;
+  };
 
-#endif
+private:
+  void reset(std::unique_ptr<T> newValue) {
+    Source<T> *sourcePt = dynamic_cast<Source<T> *>(this->storer.get());
+    sourcePt->reset(std::move(newValue));
+  };
+};
+
+class SourceHandlerResetter {
+protected:
+  template <typename T>
+  void reset(std::unique_ptr<T> newValue, SourceHandler<T> &subject) {
+    subject.reset(std::move(newValue));
+  };
+};
+
+} // namespace flw

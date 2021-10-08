@@ -5,70 +5,70 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#ifndef FLOW_NODE_H
-#define FLOW_NODE_H
+#pragma once
 
-#include <flow/FlowEntity.h>
-#include <components/ValueAware.hpp>
 #include <components/DescendantsAware.hpp>
 #include <components/Evaluator.hpp>
+#include <components/ValueAware.hpp>
+#include <flow/FlowEntity.h>
 
 namespace flw {
 
-    class ValueAwareExtractor {
-    public:
-        template<typename ValueAwareT>
-        const auto* extract(const ValueAwareT& subject) const {
-            return subject.storer.get();
-        }
-    };
+template <typename T, typename... Ts>
+class Node : public FlowEntity,
+             public DescendantsAware,
+             public Evaluator<T, Ts...> {
+  friend class NodeMaker;
 
-    template<typename T, typename ... Ts>
-    class Node
-        : public FlowEntity
-        , public DescendantsAware
-        , public Evaluator<T, Ts...>
-        , public ValueAwareExtractor {
-        friend class Flow;
-    protected:
-        Node(const std::string& name, const std::function<T(const Ts & ...)>& evaluation) 
-            : FlowEntity(name)
-            , Evaluator<T, Ts...>(evaluation) {
-        }
+protected:
+  template <typename... Values>
+  Node(const std::string &name,
+       const std::function<T(const Ts &...)> &evaluation,
+       const Values &...ancestors)
+      : Node(name, evaluation) {
+    bindSubscribeHandlers<0, Values...>(ancestors...);
+  };
 
-        template<typename ... Values>
-        Node(const std::string& name, const std::function<T(const Ts & ...)>& evaluation, const Values& ... handlers)
-            : Node(name, evaluation) {
-            bindSubscribeHandlers<0, Values...>(handlers...);
-        };
+  Node(const std::string &name,
+       const std::function<T(const Ts &...)> &evaluation)
+      : FlowEntity(name), Evaluator<T, Ts...>(evaluation) {}
 
-    protected:
-        template<typename ... Values>
-        void subscribe(const DescendantsAware& ancestor, const Values& ... ancestors) {
-            subscribe(ancestor);
-            subscribe(ancestors...);
-        };
+  template <typename... Values>
+  void subscribe(const DescendantsAware &ancestor, const Values &...ancestors) {
+    subscribe(ancestor);
+    subscribe(ancestors...);
+  };
 
-        void subscribe(const DescendantsAware& ancestor) {
-            ancestor.descendants.push_back(this);
-        };
+  void subscribe(const DescendantsAware &ancestor) {
+    ancestor.descendants.push_back(this);
+  };
 
-        template<std::size_t Index, typename Value, typename ... Values>
-        void bindSubscribeHandlers(const Value& handler, const Values& ... handlers) {
-            bindSubscribeHandlers<Index, Value>(handler);
-            bindSubscribeHandlers<Index + 1, Values...>(handlers...);
-        }
+  template <std::size_t Index, typename Value, typename... Values>
+  void bindSubscribeHandlers(const Value &ancestor,
+                             const Values &...ancestors) {
+    bindSubscribeHandlers<Index, Value>(ancestor);
+    bindSubscribeHandlers<Index + 1, Values...>(ancestors...);
+  }
 
-        template<std::size_t Index, typename Value>
-        void bindSubscribeHandlers(const Value& handler) {
-            const auto* storer = extract(handler);
-            this->template bind<Index>(*storer);
+  template <std::size_t Index, typename Value>
+  void bindSubscribeHandlers(const Value &ancestor) {
+    this->template bind<Index>(ancestor);
 
-            const DescendantsAware* asDescAware = dynamic_cast<const DescendantsAware*>(storer);
-            subscribe(*asDescAware);
-        };
-    };
+    const DescendantsAware *asDescAware =
+        dynamic_cast<const DescendantsAware *>(&ancestor);
+    if (nullptr == asDescAware) {
+      throw Error("Not a DescendantsAware");
+    }
+    subscribe(*asDescAware);
+  };
+};
 
-}
+class NodeMaker {
+protected:
+  template <typename NodeT, typename... Values>
+  NodeT *makeNode_(Values &&...values) const {
+    return new NodeT(std::forward<Values>(values)...);
+  };
+};
 
-#endif
+} // namespace flw

@@ -2,6 +2,7 @@
 #include <WordsParser.h>
 #include <flow/Flow.h>
 
+#include <fstream>
 #include <iostream>
 #include <map>
 #include <vector>
@@ -125,15 +126,55 @@ int main() {
   // build the flow
   flw::Flow flow;
 
-  // build initial nodes for reading and parsing the first text
   const std::string first_text = "LoremIpsum";
   make_text_analysis_nodes(flow, first_text);
 
+  const std::string second_text = "Novel";
+  make_text_analysis_nodes(flow, second_text);
+
+  auto first_content = flow.findNode<std::list<std::string>, std::string>(
+      first_text + std::string("-content"));
+  auto second_content = flow.findNode<std::list<std::string>, std::string>(
+      second_text + std::string("-content"));
+  auto combined_node = flow.makeNode(
+      "combined-text",
+      std::function<std::list<std::string>(const std::list<std::string> &,
+                                           const std::list<std::string> &)>(
+          [](const std::list<std::string> &contentA,
+             const std::list<std::string> &contentB) {
+            std::list<std::string> mixed;
+            auto itA = contentA.begin();
+            auto itB = contentB.begin();
+            while ((itA != contentA.end()) && (itB != contentB.end())) {
+              if (itA != contentA.end()) {
+                mixed.push_back(*itA);
+                ++itA;
+              }
+              if (itB != contentB.end()) {
+                mixed.push_back(*itB);
+                ++itB;
+              }
+            }
+            return mixed;
+          }),
+      first_content, second_content);
+
   // set the inputs and update the flow
-  flow.updateFlow(first_text, std::make_unique<std::string>(
-                                  std::string(SAMPLE_PATH) + first_text));
+  flow.updateSourcesAndFlow(
+      first_text,
+      std::make_unique<std::string>(std::string(SAMPLE_PATH) + first_text));
   flow.waitUpdateComplete();
   show_text_analysis_result(flow, first_text);
+  std::cout << "---------------------------------------------------------------"
+            << std::endl;
+  show_text_analysis_result(flow, second_text);
+
+  combined_node.useValue([](const std::list<std::string> &lines) {
+    std::ofstream stream("Combined");
+    for (const auto &line : lines) {
+      stream << line << std::endl;
+    }
+  });
 
   return EXIT_SUCCESS;
 }

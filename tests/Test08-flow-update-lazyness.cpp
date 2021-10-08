@@ -33,11 +33,10 @@ public:
     auto F0 = this->makeNode(
         "F0", std::function<int(const int &, const int &)>(combiner), D0, D1);
 
-    this->updateFlow(S0.getName(), std::make_unique<int>(1), S1.getName(),
-                     std::make_unique<int>(1), S2.getName(),
-                     std::make_unique<int>(1), S3.getName(),
-                     std::make_unique<int>(1));
-    this->waitUpdateComplete();
+    this->updateSourcesAndFlow(S0.getName(), std::make_unique<int>(1),
+                               S1.getName(), std::make_unique<int>(1),
+                               S2.getName(), std::make_unique<int>(1),
+                               S3.getName(), std::make_unique<int>(1));
     this->checkValues();
   }
 
@@ -65,9 +64,8 @@ public:
 };
 
 TEST_F(FlowTest, update_lazyness_case_0) {
-  this->updateFlow("S0", std::make_unique<int>(1), "S1",
-                   std::make_unique<int>(1));
-  this->waitUpdateComplete();
+  this->updateSourcesAndFlow("S0", std::make_unique<int>(1), "S1",
+                             std::make_unique<int>(1));
 
   this->checkValues();
 
@@ -88,9 +86,8 @@ TEST_F(FlowTest, update_lazyness_case_0) {
 }
 
 TEST_F(FlowTest, update_lazyness_case_1) {
-  this->updateFlow("S2", std::make_unique<int>(1), "S3",
-                   std::make_unique<int>(1));
-  this->waitUpdateComplete();
+  this->updateSourcesAndFlow("S2", std::make_unique<int>(1), "S3",
+                             std::make_unique<int>(1));
 
   this->checkValues();
 
