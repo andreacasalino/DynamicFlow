@@ -214,7 +214,7 @@ TEST(Flow, node_creation_while_updating_flow) {
   EXPECT_TRUE(node.isValue());
   EXPECT_FALSE(node2.isValue());
 
-  flow.updateSourcesAndFlow(source.getName(), std::make_unique<int>(0));
+  flow.updateFlow();
   flow.waitUpdateComplete();
   EXPECT_TRUE(node.isValue());
   EXPECT_TRUE(node2.isValue());

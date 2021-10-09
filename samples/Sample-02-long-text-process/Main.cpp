@@ -183,10 +183,8 @@ int main() {
           }),
       first_content, second_content);
   FlowLogger::log(flow);
-  // re-set the inputs and update the flow
-  flow.updateSourcesAndFlow(
-      FIRST_TEXT, std::make_unique<std::string>(FIRST_TEXT), SECOND_TEXT,
-      std::make_unique<std::string>(SECOND_TEXT));
+  // udpate flow to generate value in the newer node
+  flow.updateFlow();
   show_text_analysis_result(flow, SECOND_TEXT);
   FlowLogger::log(flow);
   sep();
