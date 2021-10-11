@@ -14,18 +14,16 @@ namespace flw {
 
 class ValueOrExceptionAware {
 public:
-    virtual bool isValue() const = 0;
-    virtual bool isException() const = 0;
+  virtual bool isValue() const = 0;
+  virtual bool isException() const = 0;
 
-    virtual std::exception_ptr getException() const = 0;
+  virtual std::exception_ptr getException() const = 0;
 
 protected:
-    ValueOrExceptionAware() = default;
+  ValueOrExceptionAware() = default;
 };
 
-
-template <typename T> class ValueOrException
-    : public ValueOrExceptionAware {
+template <typename T> class ValueOrException : public ValueOrExceptionAware {
 public:
   /** @brief nullptr c'tor
    */
@@ -50,9 +48,13 @@ public:
   };
 
   inline bool isValue() const override { return (nullptr != this->value); };
-  inline bool isException() const override { return (nullptr != this->exception); };
+  inline bool isException() const override {
+    return (nullptr != this->exception);
+  };
 
-  inline std::exception_ptr getException() const override { return this->exception; };
+  inline std::exception_ptr getException() const override {
+    return this->exception;
+  };
 
   const T *get() const { return this->value.get(); };
 

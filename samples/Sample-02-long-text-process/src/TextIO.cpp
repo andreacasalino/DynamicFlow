@@ -20,13 +20,27 @@ std::list<std::string> importText(const std::string &filePath) {
   return result;
 }
 
+flw::ValueOrException<std::ofstream>
+make_out_stream(const std::string &filePath) {
+  flw::ValueOrException<std::ofstream> result;
+  try {
+    result.reset(std::make_unique<std::ofstream>(filePath));
+    if (!result.get()->is_open()) {
+      throw flw::Error(filePath, " is an inexistent file");
+    }
+  } catch (...) {
+    result.resetException(std::current_exception());
+  }
+  return result;
+}
+
 void exportText(const std::list<std::string> &content,
                 const std::string &filePath) {
-  std::ofstream stream(filePath);
-  if (!stream.is_open()) {
-    throw flw::Error(filePath, " is an invalid output file");
+  auto stream = make_out_stream(filePath);
+  if (stream.isException()) {
+    std::rethrow_exception(stream.getException());
   }
   for (const auto &line : content) {
-    stream << line << std::endl;
+    *stream.get() << line << std::endl;
   }
 }

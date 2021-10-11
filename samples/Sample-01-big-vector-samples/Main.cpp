@@ -8,7 +8,7 @@
 using namespace flw;
 
 int main() {
-  // build a new flow object
+  // build a new flow
   flw::Flow flow;
 
   // define the source, which will be the number of samples to draw
@@ -64,7 +64,7 @@ int main() {
           }),
       samples, samplesMean);
 
-  // update the source to trigger the flow update
+  // update the sources and the flow
   flow.updateSourcesAndFlow(samplesNumber.getName(),
                             std::make_unique<std::size_t>(100000));
   std::cout << "Mean: " << copyValue(samplesMean)

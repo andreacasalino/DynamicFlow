@@ -14,13 +14,14 @@ namespace flw {
 
 class EntityFinder : virtual public EntityAware {
 public:
-  template <typename T> SourceHandler<T> findSource(const std::string &name) {
+  template <typename T>
+  SourceHandler<T> findSource(const std::string &name) const {
     std::lock_guard<std::mutex> creationLock(entityCreationMtx);
     return this->template findSource_<T>(name);
   };
 
   template <typename T, typename... Ts>
-  NodeHandler<T, Ts...> findNode(const std::string &name) {
+  NodeHandler<T, Ts...> findNode(const std::string &name) const {
     std::lock_guard<std::mutex> creationLock(entityCreationMtx);
     auto it = nodes.find(name);
     if (it == nodes.end()) {
