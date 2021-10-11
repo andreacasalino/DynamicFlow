@@ -9,11 +9,13 @@
 
 #include <flow/EntityAware.hpp>
 #include <flow/NodeHandler.hpp>
+#include <flow/Updater.h>
 #include <set>
 
 namespace flw {
 
 class EntityCreator : virtual public EntityAware,
+                      virtual public Updater,
                       public SourceMaker,
                       public NodeMaker,
                       public ValueAwareStorerExtractor {
@@ -30,11 +32,11 @@ public:
   }
 
   template <typename T, typename... Ts, typename... Args>
-  NodeHandler<T, Ts...>
-  makeNode(const std::string &name,
-           const std::function<T(const Ts &...)> &evaluation,
-           const Args &...handlers) {
+  NodeHandler<T> makeNode(const std::string &name,
+                          const std::function<T(const Ts &...)> &evaluation,
+                          const Args &...handlers) {
     std::lock_guard<std::mutex> creationLock(entityCreationMtx);
+    std::lock_guard<std::mutex> updaterLock(updateValuesMtx);
     checkName(name);
     checkIsInternalEntity(handlers...);
     Node<T, Ts...> *impl = this->template makeNode_<Node<T, Ts...>>(
@@ -43,7 +45,8 @@ public:
     node.reset(impl);
     nodes.emplace(node->getName(), node);
     allTogether.emplace(node->getName(), node);
-    return NodeHandler<T, Ts...>(node);
+    requiringUpdate.emplace(node.get());
+    return NodeHandler<T>(node);
   }
 
 protected:

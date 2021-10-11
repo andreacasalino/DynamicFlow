@@ -207,17 +207,22 @@ TEST(Flow, node_creation_while_updating_flow) {
     });
     th.join();
   }
-  auto node2 = flow.findNode<int, int>("node2");
+  auto node2 = flow.findNode<int>("node2");
 
   flow.waitUpdateComplete();
 
   EXPECT_TRUE(node.isValue());
   EXPECT_FALSE(node2.isValue());
+  auto node_old_gen = node.getGeneration();
+  auto node2_old_gen = node2.getGeneration();
 
-  flow.updateSourcesAndFlow(source.getName(), std::make_unique<int>(0));
+  flow.updateFlow();
   flow.waitUpdateComplete();
   EXPECT_TRUE(node.isValue());
   EXPECT_TRUE(node2.isValue());
+
+  EXPECT_EQ(node_old_gen, node.getGeneration());
+  EXPECT_EQ(node2_old_gen + 1, node2.getGeneration());
 }
 
 int main(int argc, char *argv[]) {

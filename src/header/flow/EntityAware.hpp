@@ -24,7 +24,8 @@ public:
 protected:
   EntityAware() = default;
 
-  template <typename T> SourceHandler<T> findSource_(const std::string &name) {
+  template <typename T>
+  SourceHandler<T> findSource_(const std::string &name) const {
     auto it = sources.find(name);
     if (it == sources.end()) {
       throw Error("Inexistent");

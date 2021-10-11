@@ -24,7 +24,7 @@ std::string make_node_name(const std::size_t layer,
 }
 
 using SourceTest = flw::SourceHandler<int>;
-using NodeTest = flw::NodeHandler<int, int, int>;
+using NodeTest = flw::NodeHandler<int>;
 
 template <std::size_t Layers, std::size_t MilliSecondsWait = 500>
 class FlowTest : public ::testing::Test, public flw::Flow {
@@ -70,7 +70,7 @@ public:
     int expected_value = 2;
     for (std::size_t l = 0; l < Layers; ++l) {
       for (std::size_t n = 0; n < Layers - l; ++n) {
-        auto node = this->findNode<int, int, int>(make_node_name(l, n));
+        auto node = this->findNode<int>(make_node_name(l, n));
         EXPECT_TRUE(node.isValue());
         EXPECT_EQ(flw::copyValue(node), expected_value);
       }

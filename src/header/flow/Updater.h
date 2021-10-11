@@ -22,9 +22,6 @@ protected:
 
   mutable std::mutex updateValuesMtx;
   std::set<EvaluateCapable *> requiringUpdate;
-
-  // std::atomic_bool busy = false;
-  // std::atomic<std::size_t> threadsForUpdate = 1;
 };
 
 } // namespace flw

@@ -12,9 +12,9 @@
 
 namespace flw {
 
-template <typename T, typename... Ts> class NodeHandler : public ValueAware<T> {
+template <typename T> class NodeHandler : public ValueAware<T> {
 public:
-  NodeHandler(std::shared_ptr<Node<T, Ts...>> impl) : ValueAware<T>(impl) {}
+  NodeHandler(std::shared_ptr<ValueStorer<T>> impl) : ValueAware<T>(impl) {}
 
   NodeHandler(const NodeHandler<T> &o) : ValueAware<T>(o){};
   NodeHandler<T> &operator==(const NodeHandler<T> &o) {

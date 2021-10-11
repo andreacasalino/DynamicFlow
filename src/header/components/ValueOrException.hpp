@@ -12,7 +12,18 @@
 
 namespace flw {
 
-template <typename T> class ValueOrException {
+class ValueOrExceptionAware {
+public:
+  virtual bool isValue() const = 0;
+  virtual bool isException() const = 0;
+
+  virtual std::exception_ptr getException() const = 0;
+
+protected:
+  ValueOrExceptionAware() = default;
+};
+
+template <typename T> class ValueOrException : public ValueOrExceptionAware {
 public:
   /** @brief nullptr c'tor
    */
@@ -36,10 +47,14 @@ public:
     this->value.reset();
   };
 
-  inline bool isValue() const { return (nullptr != this->value); };
-  inline bool isException() const { return (nullptr != this->exception); };
+  inline bool isValue() const override { return (nullptr != this->value); };
+  inline bool isException() const override {
+    return (nullptr != this->exception);
+  };
 
-  inline std::exception_ptr getException() const { return this->exception; };
+  inline std::exception_ptr getException() const override {
+    return this->exception;
+  };
 
   const T *get() const { return this->value.get(); };
 
@@ -50,12 +65,10 @@ private:
   std::exception_ptr exception;
 };
 
-template <typename T>
-inline bool operator==(std::nullptr_t, const ValueOrException<T> &o) {
+inline bool operator==(std::nullptr_t, const ValueOrExceptionAware &o) {
   return !o.isValue();
 };
-template <typename T>
-inline bool operator==(const ValueOrException<T> &o, std::nullptr_t) {
+inline bool operator==(const ValueOrExceptionAware &o, std::nullptr_t) {
   return !o.isValue();
 };
 } // namespace flw

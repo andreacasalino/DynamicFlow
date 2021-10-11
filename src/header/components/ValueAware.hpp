@@ -12,22 +12,23 @@
 
 namespace flw {
 
-template <typename T> class ValueAware {
+template <typename T> class ValueAware
+        : public ValueOrExceptionAware {
   friend class ValueAwareStorerExtractor;
 
 public:
   virtual ~ValueAware() = default;
 
-  bool isValue() const {
+  bool isValue() const override {
     std::lock_guard<std::mutex> lock(this->storer->valueMtx);
     return this->storer->value.isValue();
   };
-  bool isException() const {
+  bool isException() const override {
     std::lock_guard<std::mutex> lock(this->storer->valueMtx);
     return this->storer->value.isException();
   };
 
-  std::exception_ptr getException() const {
+  std::exception_ptr getException() const override {
     std::lock_guard<std::mutex> lock(this->storer->valueMtx);
     return this->storer->value.getException();
   };
