@@ -213,11 +213,16 @@ TEST(Flow, node_creation_while_updating_flow) {
 
   EXPECT_TRUE(node.isValue());
   EXPECT_FALSE(node2.isValue());
+  auto node_old_gen = node.getGeneration();
+  auto node2_old_gen = node2.getGeneration();
 
   flow.updateFlow();
   flow.waitUpdateComplete();
   EXPECT_TRUE(node.isValue());
   EXPECT_TRUE(node2.isValue());
+
+  EXPECT_EQ(node_old_gen, node.getGeneration());
+  EXPECT_EQ(node2_old_gen + 1, node2.getGeneration());
 }
 
 int main(int argc, char *argv[]) {
