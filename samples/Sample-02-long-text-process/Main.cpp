@@ -50,9 +50,9 @@ int main() {
   std::cout << "done" << std::endl;
 
   // create a text that combines the other two
-  auto first_content = flow.findNode<std::list<std::string>, std::string>(
+  auto first_content = flow.findNode<std::list<std::string>>(
       FIRST_TEXT + std::string("-content"));
-  auto second_content = flow.findNode<std::list<std::string>, std::string>(
+  auto second_content = flow.findNode<std::list<std::string>>(
       SECOND_TEXT + std::string("-content"));
   auto combined_node = flow.makeNode(
       "combined-text",
@@ -168,21 +168,17 @@ void make_text_analysis_nodes(Flow &flow, const std::string &text_name) {
 
 void make_text_analysis_exporter_node(Flow &flow, const std::string &text_name,
                                       const std::string &file_name) {
-  auto linesCounter =
-      flow.template findNode<std::size_t, std::list<std::string>>(
-          text_name + std::string("-lines-counter"));
+  auto linesCounter = flow.template findNode<std::size_t>(
+      text_name + std::string("-lines-counter"));
 
-  auto spacesCounter =
-      flow.template findNode<std::size_t, std::list<std::string>>(
-          text_name + std::string("-spaces-counter"));
+  auto spacesCounter = flow.template findNode<std::size_t>(
+      text_name + std::string("-spaces-counter"));
 
-  auto wordsCounter =
-      flow.template findNode<std::size_t, std::map<std::string, std::size_t>>(
-          text_name + std::string("-words-counter"));
+  auto wordsCounter = flow.template findNode<std::size_t>(
+      text_name + std::string("-words-counter"));
 
   auto wordsFrequencies =
-      flow.template findNode<std::map<std::string, std::size_t>,
-                             std::vector<std::list<std::string>>>(
+      flow.template findNode<std::map<std::string, std::size_t>>(
           text_name + std::string("-words-frequencies"));
 
   auto export_was_done = flow.makeNode(

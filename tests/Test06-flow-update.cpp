@@ -207,7 +207,7 @@ TEST(Flow, node_creation_while_updating_flow) {
     });
     th.join();
   }
-  auto node2 = flow.findNode<int, int>("node2");
+  auto node2 = flow.findNode<int>("node2");
 
   flow.waitUpdateComplete();
 

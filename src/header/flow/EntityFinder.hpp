@@ -20,15 +20,14 @@ public:
     return this->template findSource_<T>(name);
   };
 
-  template <typename T, typename... Ts>
-  NodeHandler<T, Ts...> findNode(const std::string &name) const {
+  template <typename T> NodeHandler<T> findNode(const std::string &name) const {
     std::lock_guard<std::mutex> creationLock(entityCreationMtx);
     auto it = nodes.find(name);
     if (it == nodes.end()) {
       throw Error("Inexistent");
     }
-    std::shared_ptr<Node<T, Ts...>> impl =
-        std::dynamic_pointer_cast<Node<T, Ts...>, FlowEntity>(it->second);
+    std::shared_ptr<ValueStorer<T>> impl =
+        std::dynamic_pointer_cast<ValueStorer<T>, FlowEntity>(it->second);
     if (nullptr == impl) {
       throw Error("Wrong type asked");
     }

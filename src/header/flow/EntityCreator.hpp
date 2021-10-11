@@ -32,10 +32,9 @@ public:
   }
 
   template <typename T, typename... Ts, typename... Args>
-  NodeHandler<T, Ts...>
-  makeNode(const std::string &name,
-           const std::function<T(const Ts &...)> &evaluation,
-           const Args &...handlers) {
+  NodeHandler<T> makeNode(const std::string &name,
+                          const std::function<T(const Ts &...)> &evaluation,
+                          const Args &...handlers) {
     std::lock_guard<std::mutex> creationLock(entityCreationMtx);
     std::lock_guard<std::mutex> updaterLock(updateValuesMtx);
     checkName(name);
@@ -47,7 +46,7 @@ public:
     nodes.emplace(node->getName(), node);
     allTogether.emplace(node->getName(), node);
     requiringUpdate.emplace(node.get());
-    return NodeHandler<T, Ts...>(node);
+    return NodeHandler<T>(node);
   }
 
 protected:
