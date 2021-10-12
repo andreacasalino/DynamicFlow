@@ -13,6 +13,8 @@ std::unique_ptr<int> make_sample();
 int main() {
   flw::Flow flow;
 
+  // build a simple flow with 2 int as sources and 2 nodes representing their
+  // sum and difference
   auto sampleA = flow.makeSource<int>("SampleA");
   auto sampleB = flow.makeSource<int>("SampleB");
   auto sum_node = flow.makeNode<int, int, int>(
@@ -28,6 +30,8 @@ int main() {
 
   std::atomic_bool life = true;
 
+  // spawn the thread updating the flow by sampling everytime new numbers for
+  // the sources
   std::thread updatingThread([&]() {
     repeat_action(
         [&]() {
@@ -38,6 +42,9 @@ int main() {
         },
         life, SAMPLE_TIME_FLOW_UPDATE);
   });
+  // spawn 2 threads logging the content of the nodes with a regular sampling
+  // time. During the execution of the program 2 log files named Diff.txt and
+  // Sum.txt should appear
   std::thread sum_node_logger([&]() {
     NodeLogger logger(sum_node);
     repeat_action([&logger]() { logger.update(); }, life, SAMPLE_TIME_LOG);
@@ -49,6 +56,7 @@ int main() {
     logger.update();
   });
 
+  // this keeps loop until the user press 'k'
   std::cout << "Press k to stop" << std::endl;
   char key_pressed;
   while (life) {
