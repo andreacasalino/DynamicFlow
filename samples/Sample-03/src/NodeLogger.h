@@ -6,7 +6,7 @@
 
 class NodeLogger {
 public:
-  NodeLogger(flw::Flow &flow, const std::string nodeName);
+  NodeLogger(const flw::NodeHandler<int> &subjectToLog);
 
   void update();
 
