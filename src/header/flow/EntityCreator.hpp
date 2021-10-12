@@ -18,7 +18,7 @@ class EntityCreator : virtual public EntityAware,
                       virtual public Updater,
                       public SourceMaker,
                       public NodeMaker,
-                      public ValueAwareStorerExtractor {
+                      public ValueStorerExtractor {
 public:
   template <typename T> SourceHandler<T> makeSource(const std::string &name) {
     std::lock_guard<std::mutex> creationLock(entityCreationMtx);

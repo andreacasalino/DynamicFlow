@@ -13,6 +13,11 @@
 
 namespace flw {
 
+/**
+ * @brief A Source is a node at the beginning of the flow.
+ * It represents an input, i.e. a value that should be given
+ * and may change over the time.
+ */
 template <typename T>
 class Source : public FlowEntity,
                public ValueStorer<T>,
@@ -20,6 +25,9 @@ class Source : public FlowEntity,
   friend class SourceMaker;
 
 public:
+  /**
+   * @input the new value to reset the stored one.
+   */
   void reset(std::unique_ptr<T> newValue) {
     std::lock_guard<std::mutex> lock(this->valueMtx);
     this->value.reset(std::move(newValue));

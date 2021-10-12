@@ -27,15 +27,24 @@ class AncestorsAwareRecurr<Position, T, Ts...>
     : public AncestorAware<Position, T>,
       public AncestorsAwareRecurr<Position + 1, Ts...> {};
 
+/**
+ * @brief An object linked to some ancestors
+ */
 template <typename... Ts>
 class AncestorsAware : public AncestorsAwareRecurr<0, Ts...> {
 public:
+  /**
+   * @return The Index-th ancestor
+   */
   template <std::size_t Index> auto &getAncestor() {
     return static_cast<
         AncestorAware<Index, typename TypeExtractor<Index, Ts...>::Type> &>(
         *this);
   }
 
+  /**
+   * @return The Index-th ancestor
+   */
   template <std::size_t Index> const auto &getAncestor() const {
     return static_cast<const AncestorAware<
         Index, typename TypeExtractor<Index, Ts...>::Type> &>(*this);

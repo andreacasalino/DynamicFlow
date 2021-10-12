@@ -7,12 +7,12 @@
 
 #pragma once
 
-#include <components/ValueAware.hpp>
+#include <components/ValueStorerDecorator.hpp>
 #include <flow/Updater.h>
 
 namespace flw {
 
-class UpdaterFlow : virtual public Updater, private ValueAwareStorerExtractor {
+class UpdaterFlow : virtual public Updater, private ValueStorerExtractor {
 public:
   void updateFlow();
 

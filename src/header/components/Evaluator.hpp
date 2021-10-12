@@ -66,6 +66,11 @@ struct EvaluatorRecurr<Position, FunctionT, EvaluatorT, ResultT, T> {
   }
 };
 
+/**
+ * @brief An object that at the same time stores a value, that can be
+ * updated by evaluating an expression that uses the ancestors of this
+ * object to compute the new value.
+ */
 template <typename ResultT, typename... Ts>
 class Evaluator : public ValueStorer<ResultT>,
                   public AncestorsAware<Ts...>,

@@ -15,7 +15,7 @@ namespace flw {
 class UpdaterSources : virtual public EntityAware,
                        virtual public Updater,
                        private SourceHandlerResetter,
-                       private ValueAwareStorerExtractor {
+                       private ValueStorerExtractor {
 public:
   // documentare bene che flow non sara aggiornato subito dopo aver aggiornato
   // sources, ma serve chiamare updateFlow()

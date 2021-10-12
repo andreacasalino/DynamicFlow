@@ -9,11 +9,14 @@
 
 #include <components/DescendantsAware.hpp>
 #include <components/Evaluator.hpp>
-#include <components/ValueAware.hpp>
 #include <flow/FlowEntity.h>
 
 namespace flw {
 
+/**
+ * @brief A Node is a node whose value is updated after its
+ * ancestors' values are updated.
+ */
 template <typename T, typename... Ts>
 class Node : public FlowEntity,
              public DescendantsAware,

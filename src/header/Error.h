@@ -11,7 +11,8 @@
 #include <stdexcept>
 
 namespace flw {
-/** @brief A runtime error that can be raised when using any object in flw::
+/**
+ * @brief A runtime error that can be raised when using any object in flw::
  */
 class Error : public std::runtime_error {
 public:

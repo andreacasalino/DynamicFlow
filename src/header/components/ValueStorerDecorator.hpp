@@ -12,12 +12,12 @@
 
 namespace flw {
 
-template <typename T> class ValueAware
+template <typename T> class ValueStorerDecorator
         : public ValueOrExceptionAware {
-  friend class ValueAwareStorerExtractor;
+  friend class ValueStorerExtractor;
 
 public:
-  virtual ~ValueAware() = default;
+  virtual ~ValueStorerDecorator() = default;
 
   bool isValue() const override {
     std::lock_guard<std::mutex> lock(this->storer->valueMtx);
@@ -33,6 +33,12 @@ public:
     return this->storer->value.getException();
   };
 
+  /**
+   * @brief Tries to use the value stored by the decorated ValueStorer.
+   * @throw In case the decorated storer does not contain a value to use
+   * @input A predicate internally called, passing a const reference of
+   * the value to use
+   */
   template <typename FunctionT> bool useValue(FunctionT action) const {
     std::lock_guard<std::mutex> lock(this->storer->valueMtx);
     if (this->storer->value.isException()) {
@@ -45,21 +51,27 @@ public:
     return true;
   }
 
+  /**
+   * @return The number of times the value inside the decorated storer was reset.
+   */
   inline std::size_t getGeneration() const { return this->storer->generations; }
 
+  /**
+   * @return The name of the decorated storer.
+   */
   inline const std::string &getName() const {
     return *dynamic_cast<FlowEntity *>(this->storer.get())->getName().get();
   }
 
 protected:
-  ValueAware(const std::shared_ptr<ValueStorer<T>> &storer) : storer(storer) {
+    ValueStorerDecorator(const std::shared_ptr<ValueStorer<T>> &storer) : storer(storer) {
     if (nullptr == this->storer) {
       throw Error("Empty storer");
     }
   };
 
-  ValueAware(const ValueAware<T> &o) : ValueAware(o.storer){};
-  ValueAware<T> &operator==(const ValueAware<T> &o) {
+  ValueStorerDecorator(const ValueStorerDecorator<T> &o) : ValueStorerDecorator(o.storer){};
+  ValueStorerDecorator<T> &operator==(const ValueStorerDecorator<T> &o) {
     storer = o.storer;
     return *this;
   }
@@ -67,7 +79,7 @@ protected:
   std::shared_ptr<ValueStorer<T>> storer;
 };
 
-class ValueAwareStorerExtractor {
+class ValueStorerExtractor {
 protected:
   template <typename ValueAwareT>
   static const auto &extractStorer(const ValueAwareT &subject) {
@@ -80,7 +92,12 @@ protected:
   };
 };
 
-template <typename T> T copyValue(const ValueAware<T> &entity) {
+/**
+ * @brief Does not compiles in case <T> is not copiable.
+ * @return The value contained by the stored decorated by the passed object.
+ * @throw In case the stored decorated by entity does not contain a value
+ */
+template <typename T> T copyValue(const ValueStorerDecorator<T> &entity) {
   if (!entity.isValue()) {
     throw Error("Entity named ", entity.getName(),
                 " does not contains a value");
@@ -91,15 +108,4 @@ template <typename T> T copyValue(const ValueAware<T> &entity) {
   return copy;
 }
 
-template <typename T>
-std::unique_ptr<T> copyValuePtr(const ValueAware<T> &entity) {
-  if (!entity.isValue()) {
-    throw Error("Entity named ", entity.getName(),
-                " does not contains a value");
-  }
-  std::unique_ptr<T> copy;
-  auto cloner = [&copy](const auto &val) { copy = std::make_unique<T>(val); };
-  entity.useValue(cloner);
-  return std::move(copy);
-}
 } // namespace flw
