@@ -13,8 +13,14 @@
 
 namespace flw {
 
+/**
+ * @brief An object aware of the elements in the flow that should 
+ * need to be re-evaluated.
+ */
 class Updater {
 public:
+  virtual ~Updater() = default;
+
   bool isUpdated() const;
 
 protected:
