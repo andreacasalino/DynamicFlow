@@ -3,12 +3,10 @@
 ![binaries_compilation](https://github.com/andreacasalino/DynamicFlow/actions/workflows/installArtifacts.yml/badge.svg)
 ![binaries_compilation](https://github.com/andreacasalino/DynamicFlow/actions/workflows/runTests.yml/badge.svg)
 
-**DynamicFlow** is templatized library for handling **dynamic flow network**.
-**Dynamic flow networks** are group of variables connected in a directed acyclic graph, whose values are correlated.
-Each node of the network contains a value that is obtained by applying a certain specified function to the values pertaining to the ancestors nodes in the
-same network.
-This architecture can be used to model network of variables whose computation absorb a significant amount of time, like rendering engine, machine learning pipeline, 
-long text handling, etc...
+**DynamicFlow** is a templatized library for handling **data flow network**.
+[**Data flow network**](https://en.wikipedia.org/wiki/Data-flow_diagram) are **data flow** having group of variables connected in a directed acyclic graph, whose values are correlated.
+Each node of the network contains a value that is obtained by applying a certain specified function to the values previously computed for to the ancestors nodes.
+This architecture can be used to model network of variables whose computation absorb a significant amount of time, like rendering engine, machine learning pipeline, long text handling, etc...
 The interfaces contained in this repository allows you to create and handle the network, re-setting at the proper time some of the sources in the network.
 Then, you can subsequently update the entire network, re-computing only the nodes that were dependent by the updated sources.
 The functionalities provided are completely thread-safe (by the way feel free to report any bug if you discover a strange behaviour ;)).
