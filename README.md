@@ -33,7 +33,5 @@ must be specified.
  
 **What else?**
 
-If you have found this library useful, please find the time to leave a star :). 
-
-![](https://github.com/andreacasalino/DynamicFlow/blob/master/Readme-picture.png)
+![If you have found this library useful, please find the time to leave a star :).](https://github.com/andreacasalino/DynamicFlow/blob/master/Readme-picture.png)
 
