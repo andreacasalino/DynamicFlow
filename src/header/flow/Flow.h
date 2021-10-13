@@ -37,5 +37,10 @@ public:
 class Flow : public EntityCreator, public FlowUpdatable {
 public:
   Flow() = default;
+
+  Flow &operator=(Flow &&o) {
+    this->absorb(std::move(o));
+    return *this;
+  };
 };
 } // namespace flw

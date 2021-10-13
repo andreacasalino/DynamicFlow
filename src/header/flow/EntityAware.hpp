@@ -11,6 +11,7 @@
 #include <flow/SourceHandler.hpp>
 #include <map>
 #include <mutex>
+#include <memory>
 
 namespace flw {
 
@@ -49,6 +50,10 @@ protected:
   std::map<FlowName, FlowEntityPtr> allTogether;
 
   mutable std::mutex entityCreationMtx;
+
+  static std::unique_ptr<std::lock_guard<std::mutex>> makeEntityCreationMtxLock(EntityAware& subject) {
+      return std::make_unique<std::lock_guard<std::mutex>>(subject.entityCreationMtx);
+  };
 };
 
 } // namespace flw

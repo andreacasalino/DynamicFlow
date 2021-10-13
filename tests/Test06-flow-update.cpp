@@ -225,6 +225,86 @@ TEST(Flow, node_creation_while_updating_flow) {
   EXPECT_EQ(node2_old_gen + 1, node2.getGeneration());
 }
 
+class FlowTest : public flw::Flow {
+public:
+  FlowTest() {
+    auto source = makeSource<std::string>(source_name);
+    makeNode(nodeA_name, copier, source);
+    makeNode(nodeB_name, copier, source);
+  }
+
+  void resetSource() {
+    updateSource(source_name, std::make_unique<std::string>(source_content));
+  }
+
+  void expect_empty() const {
+    EXPECT_TRUE(sources.empty());
+    EXPECT_TRUE(nodes.empty());
+    EXPECT_TRUE(allTogether.empty());
+    EXPECT_TRUE(requiringUpdate.empty());
+  }
+
+  void expect_non_empty() const {
+    EXPECT_FALSE(sources.empty());
+    EXPECT_FALSE(nodes.empty());
+    EXPECT_FALSE(allTogether.empty());
+    EXPECT_FALSE(requiringUpdate.empty());
+  }
+
+  static const std::string source_name;
+  static const std::string source_content;
+  static const std::string nodeA_name;
+  static const std::string nodeB_name;
+
+private:
+  static const std::function<std::string(const std::string &)> copier;
+};
+const std::string FlowTest::source_name = "source";
+const std::string FlowTest::source_content = "Hello World";
+const std::string FlowTest::nodeA_name = "nodeA";
+const std::string FlowTest::nodeB_name = "nodeB";
+const std::function<std::string(const std::string &)> FlowTest::copier =
+    [](const auto &in) { return in; };
+
+TEST(Flow, move_semantic) {
+  {
+    FlowTest giver;
+    giver.expect_non_empty();
+
+    FlowTest recipient;
+    recipient.absorb(std::move(giver));
+    giver.expect_empty();
+    recipient.expect_non_empty();
+
+    EXPECT_THROW(giver.resetSource(), flw::Error);
+    recipient.resetSource();
+  }
+
+  {
+    FlowTest giver;
+
+    auto source = giver.findSource<std::string>(FlowTest::source_name);
+    auto nodeA = giver.findNode<std::string>(FlowTest::nodeA_name);
+    auto nodeB = giver.findNode<std::string>(FlowTest::nodeB_name);
+
+    FlowTest recipient;
+    recipient.absorb(std::move(giver));
+
+    EXPECT_THROW(giver.findSource<std::string>(FlowTest::source_name),
+                 flw::Error);
+
+    recipient.resetSource();
+    recipient.updateFlow();
+
+    EXPECT_TRUE(source.isValue());
+    EXPECT_EQ(flw::copyValue(source), FlowTest::source_content);
+    EXPECT_TRUE(nodeA.isValue());
+    EXPECT_EQ(flw::copyValue(nodeA), FlowTest::source_content);
+    EXPECT_TRUE(nodeB.isValue());
+    EXPECT_EQ(flw::copyValue(nodeB), FlowTest::source_content);
+  }
+}
+
 int main(int argc, char *argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
