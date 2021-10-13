@@ -35,5 +35,5 @@ must be specified.
 
 If you have found this library useful, please find the time to leave a star :).
 
-![How a data flow looks like:](https://github.com/andreacasalino/DynamicFlow/blob/master/Readme-picture.png)
+![How a data flow looks like:](Readme-picture.png)
 
