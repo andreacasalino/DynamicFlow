@@ -28,6 +28,9 @@ public:
   PrintableFlow() = default;
 };
 
+/**
+ * @throw In case the passed fileName is an invalid file path for creating the log
+ */
 void log(const std::string &fileName, const flw::PrintCapable &subject);
 } // namespace flw
 

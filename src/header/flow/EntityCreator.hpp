@@ -24,6 +24,7 @@ public:
    * @brief Creates a new source inside this flow
    * @input the name of the source
    * @return An handler storing the newly created source
+   * @throw In case a source with the passed name already exists in this flow
    */
   template <typename T> SourceHandler<T> makeSource(const std::string &name) {
     std::lock_guard<std::mutex> creationLock(entityCreationMtx);
@@ -43,6 +44,9 @@ public:
    * update its value
    * @input the entities that the node to create depends on
    * @return An handler storing the newly created node
+   * @throw In case a node with the passed name already exists in this flow
+   * @throw In case one of the passed handlers is neither a NodeHandler nor a SourceHandler
+   * @throw In case one of the passed handlers is not contained in this flow
    */
   template <typename T, typename... Ts, typename... Args>
   NodeHandler<T> makeNode(const std::string &name,

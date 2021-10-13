@@ -25,6 +25,8 @@ public:
    * @UpdaterFlow class.
    * @input the name of the source to update
    * @input the value to use for updating the source
+   * @throw In case a source with that name does not exist in this flow
+   * @throw In case a source with that name exists, but has a different type other than <T>
    */
   template <typename T>
   void updateSource(const std::string &source_name,
