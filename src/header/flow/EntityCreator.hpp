@@ -20,11 +20,11 @@ class EntityCreator : virtual public EntityAware,
                       public NodeMaker,
                       public ValueStorerExtractor {
 public:
-    /**
-     * @brief Creates a new source inside this flow
-     * @input the name of the source
-     * @return An handler storing the newly created source
-     */
+  /**
+   * @brief Creates a new source inside this flow
+   * @input the name of the source
+   * @return An handler storing the newly created source
+   */
   template <typename T> SourceHandler<T> makeSource(const std::string &name) {
     std::lock_guard<std::mutex> creationLock(entityCreationMtx);
     checkName(name);
@@ -39,7 +39,8 @@ public:
   /**
    * @brief Creates a new node inside this flow
    * @input the name of the source
-   * @input the expression that the node to create should use to internally update its value
+   * @input the expression that the node to create should use to internally
+   * update its value
    * @input the entities that the node to create depends on
    * @return An handler storing the newly created node
    */
@@ -60,6 +61,24 @@ public:
     requiringUpdate.emplace(node.get());
     return NodeHandler<T>(node);
   }
+
+  template <typename FlowT> void absorb(FlowT &&o) {
+    auto lockCreationOther = makeEntityCreationMtxLock(o);
+    auto lockUpdateOther = makeUpdateValuesMtxLock(o);
+
+    std::lock_guard<std::mutex> lockCreation(entityCreationMtx);
+    std::lock_guard<std::mutex> lockUpdate(updateValuesMtx);
+
+    this->sources = std::move(o.sources);
+    this->nodes = std::move(o.nodes);
+    this->allTogether = std::move(o.allTogether);
+    this->requiringUpdate = std::move(o.requiringUpdate);
+
+    o.sources.clear();
+    o.nodes.clear();
+    o.allTogether.clear();
+    o.requiringUpdate.clear();
+  };
 
 protected:
   void checkName(const std::string &name) {
