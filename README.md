@@ -29,7 +29,7 @@ must be specified.
 	  
  * Compile the library and the samples
 
- * You can also just download the compiled binaries (compiled in Release) of the library of the latest master commit [here](https://github.com/andreacasalino/Easy-Factor-Graph/actions) 
+ * You can also just download the compiled binaries (compiled in Release) of the library of the latest master commit [here](https://github.com/andreacasalino/DynamicFlow/actions) 
  
 **What else?**
 
