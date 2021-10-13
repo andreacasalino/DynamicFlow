@@ -18,8 +18,13 @@ class EntityCreator : virtual public EntityAware,
                       virtual public Updater,
                       public SourceMaker,
                       public NodeMaker,
-                      public ValueAwareStorerExtractor {
+                      public ValueStorerExtractor {
 public:
+    /**
+     * @brief Creates a new source inside this flow
+     * @input the name of the source
+     * @return An handler storing the newly created source
+     */
   template <typename T> SourceHandler<T> makeSource(const std::string &name) {
     std::lock_guard<std::mutex> creationLock(entityCreationMtx);
     checkName(name);
@@ -31,6 +36,13 @@ public:
     return SourceHandler<T>(source);
   }
 
+  /**
+   * @brief Creates a new node inside this flow
+   * @input the name of the source
+   * @input the expression that the node to create should use to internally update its value
+   * @input the entities that the node to create depends on
+   * @return An handler storing the newly created node
+   */
   template <typename T, typename... Ts, typename... Args>
   NodeHandler<T> makeNode(const std::string &name,
                           const std::function<T(const Ts &...)> &evaluation,

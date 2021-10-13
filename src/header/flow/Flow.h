@@ -14,17 +14,28 @@
 
 namespace flw {
 
-class Flow : public EntityCreator,
-             public EntityFinder,
-             public UpdaterSources,
-             public UpdaterFlow {
+/**
+ * @brief A flow which is only updatable manipulating the existent entities
+ */
+class FlowUpdatable : public EntityFinder,
+                      public UpdaterSources,
+                      public UpdaterFlow {
 public:
-  Flow() = default;
+  FlowUpdatable() = default;
 
   template <typename... UpdateInputs>
   void updateSourcesAndFlow(UpdateInputs &&...inputs) {
     updateSources(std::forward<UpdateInputs>(inputs)...);
     updateFlow();
   }
+};
+
+/**
+ * @brief A complete flow which is not only updatable, but also
+ * extendable by adding new sources and nodes
+ */
+class Flow : public EntityCreator, public FlowUpdatable {
+public:
+  Flow() = default;
 };
 } // namespace flw

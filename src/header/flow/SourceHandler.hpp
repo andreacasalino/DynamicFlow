@@ -7,20 +7,20 @@
 
 #pragma once
 
-#include <components/ValueAware.hpp>
+#include <components/ValueStorerDecorator.hpp>
 #include <flow/Source.hpp>
 
 namespace flw {
 
-template <typename T> class SourceHandler : public ValueAware<T> {
+template <typename T> class SourceHandler : public ValueStorerDecorator<T> {
   friend class SourceHandlerResetter;
 
 public:
-  SourceHandler(std::shared_ptr<Source<T>> impl) : ValueAware<T>(impl) {}
+  SourceHandler(std::shared_ptr<Source<T>> impl) : ValueStorerDecorator<T>(impl) {}
 
-  SourceHandler(const SourceHandler<T> &o) : ValueAware<T>(o){};
+  SourceHandler(const SourceHandler<T> &o) : ValueStorerDecorator<T>(o){};
   SourceHandler<T> &operator==(const SourceHandler<T> &o) {
-    static_cast<ValueAware<T> &>(*this) = static_cast<const ValueAware<T> &>(o);
+    static_cast<ValueStorerDecorator<T> &>(*this) = static_cast<const ValueStorerDecorator<T> &>(o);
     return *this;
   };
 

@@ -117,7 +117,7 @@ void PrintBasic::print(std::ostream &stream) const {
   }
 }
 
-void log(const std::string &fileName, flw::PrintCapable &subject) {
+void log(const std::string &fileName, const flw::PrintCapable &subject) {
   std::ofstream stream(fileName);
   if (!stream.is_open()) {
     throw Error("Invalid log file location");
@@ -127,7 +127,7 @@ void log(const std::string &fileName, flw::PrintCapable &subject) {
 
 } // namespace flw
 
-std::ostream &operator<<(std::ostream &stream, flw::PrintCapable &subject) {
+std::ostream &operator<<(std::ostream &stream, const flw::PrintCapable &subject) {
   subject.print(stream);
   return stream;
 }

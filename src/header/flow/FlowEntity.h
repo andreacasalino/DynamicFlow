@@ -11,6 +11,10 @@
 #include <string>
 
 namespace flw {
+
+/**
+ * @brief A name used to refer to a specific entitiy of a flow
+ */
 class FlowName : public std::shared_ptr<const std::string> {
 public:
   FlowName(const std::string &nameRaw);
@@ -20,6 +24,9 @@ inline bool operator<(const FlowName &a, const FlowName &b) {
   return *a.get() < *b.get();
 }
 
+/**
+ * @brief Base class inherited by all the floe entities (sources or nodes)
+ */
 class FlowEntity {
 public:
   virtual ~FlowEntity() = default;

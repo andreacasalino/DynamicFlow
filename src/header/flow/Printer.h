@@ -28,7 +28,7 @@ public:
   PrintableFlow() = default;
 };
 
-void log(const std::string &fileName, flw::PrintCapable &subject);
+void log(const std::string &fileName, const flw::PrintCapable &subject);
 } // namespace flw
 
-std::ostream &operator<<(std::ostream &stream, flw::PrintCapable &subject);
+std::ostream &operator<<(std::ostream &stream, const flw::PrintCapable &subject);

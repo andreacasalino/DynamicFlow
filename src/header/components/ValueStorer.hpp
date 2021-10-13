@@ -15,11 +15,12 @@ namespace flw {
 
 template <typename T> class ValueStorer : public ValueOrExceptionAware {
 public:
-  virtual ~ValueStorer() = default;
-
   mutable std::mutex valueMtx;
   ValueOrException<T> value;
 
+  /**
+   * @brief It counts the number of times this->value was reset.
+   */
   std::atomic<std::size_t> generations = std::atomic<std::size_t>{0};
 
   bool isValue() const override {
@@ -35,9 +36,6 @@ public:
     std::lock_guard<std::mutex> lock(valueMtx);
     return value.getException();
   };
-
-protected:
-  ValueStorer() = default;
 };
 
 } // namespace flw

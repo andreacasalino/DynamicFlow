@@ -2,6 +2,7 @@
 #include <chrono>
 #include <fstream>
 #include <sstream>
+#include <ctime>
 
 NodeLogger::NodeLogger(const flw::NodeHandler<int> &subjectToLog)
     : subjectToLog(subjectToLog),

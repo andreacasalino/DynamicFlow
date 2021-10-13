@@ -14,8 +14,13 @@
 
 namespace flw {
 
+/**
+ * @brief An object aware of the flow components
+ */
 class EntityAware {
 public:
+  virtual ~EntityAware() = default;
+
   EntityAware(const EntityAware &) = delete;
   EntityAware &operator==(const EntityAware &) = delete;
   EntityAware(EntityAware &&) = delete;

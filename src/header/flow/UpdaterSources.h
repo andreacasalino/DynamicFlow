@@ -15,10 +15,17 @@ namespace flw {
 class UpdaterSources : virtual public EntityAware,
                        virtual public Updater,
                        private SourceHandlerResetter,
-                       private ValueAwareStorerExtractor {
+                       private ValueStorerExtractor {
 public:
-  // documentare bene che flow non sara aggiornato subito dopo aver aggiornato
-  // sources, ma serve chiamare updateFlow()
+  /**
+   * @brief Update the specified source, using the passed value.
+   * ATTENTION!!! After calling this method, the Source object is actually
+   * udpated, but not the entire flow (i.e. all the nodes depending on this
+   * source). You can trigger the flow update by using the methods inside the
+   * @UpdaterFlow class.
+   * @input the name of the source to update
+   * @input the value to use for updating the source
+   */
   template <typename T>
   void updateSource(const std::string &source_name,
                     std::unique_ptr<T> new_value) {
@@ -28,6 +35,9 @@ public:
     expandRequiringUpdate();
   };
 
+  /**
+   * @brief Variadic version of this->updateSource
+   */
   template <typename... UpdateInputs>
   void updateSources(UpdateInputs &&...inputs) {
     std::lock_guard<std::mutex> creationLock(entityCreationMtx);
