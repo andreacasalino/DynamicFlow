@@ -35,3 +35,5 @@ must be specified.
 
 If you have found this library useful, please find the time to leave a star :). 
 
+![](https://github.com/andreacasalino/DynamicFlow/blob/master/Readme-picture.png)
+
