@@ -12,13 +12,11 @@
 
 namespace flw {
 
-template <typename T> class ValueStorerDecorator
-        : public ValueOrExceptionAware {
+template <typename T>
+class ValueStorerDecorator : public ValueOrExceptionAware {
   friend class ValueStorerExtractor;
 
 public:
-  virtual ~ValueStorerDecorator() = default;
-
   bool isValue() const override {
     std::lock_guard<std::mutex> lock(this->storer->valueMtx);
     return this->storer->value.isValue();
@@ -52,7 +50,8 @@ public:
   }
 
   /**
-   * @return The number of times the value inside the decorated storer was reset.
+   * @return The number of times the value inside the decorated storer was
+   * reset.
    */
   inline std::size_t getGeneration() const { return this->storer->generations; }
 
@@ -64,13 +63,15 @@ public:
   }
 
 protected:
-    ValueStorerDecorator(const std::shared_ptr<ValueStorer<T>> &storer) : storer(storer) {
+  ValueStorerDecorator(const std::shared_ptr<ValueStorer<T>> &storer)
+      : storer(storer) {
     if (nullptr == this->storer) {
       throw Error("Empty storer");
     }
   };
 
-  ValueStorerDecorator(const ValueStorerDecorator<T> &o) : ValueStorerDecorator(o.storer){};
+  ValueStorerDecorator(const ValueStorerDecorator<T> &o)
+      : ValueStorerDecorator(o.storer){};
   ValueStorerDecorator<T> &operator==(const ValueStorerDecorator<T> &o) {
     storer = o.storer;
     return *this;

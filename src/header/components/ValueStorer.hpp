@@ -15,8 +15,6 @@ namespace flw {
 
 template <typename T> class ValueStorer : public ValueOrExceptionAware {
 public:
-  virtual ~ValueStorer() override = default;
-
   mutable std::mutex valueMtx;
   ValueOrException<T> value;
 
@@ -38,9 +36,6 @@ public:
     std::lock_guard<std::mutex> lock(valueMtx);
     return value.getException();
   };
-
-protected:
-  ValueStorer() = default;
 };
 
 } // namespace flw
