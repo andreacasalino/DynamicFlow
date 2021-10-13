@@ -37,5 +37,8 @@ public:
 class Flow : public EntityCreator, public FlowUpdatable {
 public:
   Flow() = default;
+
+  Flow(Flow &&o);
+  Flow &operator=(Flow &&o);
 };
 } // namespace flw
