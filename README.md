@@ -14,7 +14,7 @@ The functionalities provided are completely thread-safe (by the way feel free to
 This package is already embedded with the functionality to update the flow by exploiting **multi threading**. From the outside, only the number of threads to use
 must be specified.
 
-![How a data flow looks like:](Readme-picture.svg)
+![How a data flow looks like:](Readme-picture.png)
 
 **Contents**
 
