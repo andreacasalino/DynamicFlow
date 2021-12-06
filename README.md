@@ -2,6 +2,7 @@
 
 ![binaries_compilation](https://github.com/andreacasalino/DynamicFlow/actions/workflows/installArtifacts.yml/badge.svg)
 ![binaries_compilation](https://github.com/andreacasalino/DynamicFlow/actions/workflows/runTests.yml/badge.svg)
+![quality](https://sonarcloud.io/dashboard?id=andreacasalino_DynamicFlow)
 
 **DynamicFlow** is a templatized library for handling **data flow network**.
 [**Data flow network**](https://en.wikipedia.org/wiki/Data-flow_diagram) are **data flow** having group of variables connected in a directed acyclic graph, whose values are correlated.
