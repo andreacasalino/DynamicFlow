@@ -13,9 +13,14 @@ namespace flw {
  * @brief Results of an internal evaluation.
  * SUCCESS -> the evaluation was done without problems
  * NOT_READY -> it is not possible to do the evaluation in this moment
- * BLOCKING_EXCEPTION -> it is not possible to do the evaluation as a dependant object stores an exception
+ * BLOCKING_EXCEPTION -> it is not possible to do the evaluation as a dependant
+ * object stores an exception
  */
-enum EvaluationResult { SUCCESS, NOT_READY, BLOCKING_EXCEPTION };
+enum class EvaluationResult {
+  SUCCESS = 1,
+  NOT_READY = 2,
+  BLOCKING_EXCEPTION = 3
+};
 
 /**
  * @brief An object that can be update by evaluating an internal expression
@@ -30,7 +35,7 @@ public:
   virtual EvaluationResult evaluate() = 0;
 
 protected:
-    EvaluateCapable() = default;
+  EvaluateCapable() = default;
 };
 
 } // namespace flw
