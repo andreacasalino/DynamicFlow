@@ -86,7 +86,7 @@ public:
 
 protected:
   template <typename... Values>
-  Evaluator(const std::function<ResultT(const Ts &...)> &evaluation)
+  explicit Evaluator(const std::function<ResultT(const Ts &...)> &evaluation)
       : evaluation(evaluation){};
 
 private:
