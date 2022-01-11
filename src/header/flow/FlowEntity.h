@@ -34,7 +34,7 @@ public:
   inline FlowName getName() const { return name; }
 
 protected:
-  FlowEntity(const std::string &nameRaw);
+  explicit FlowEntity(const std::string &nameRaw);
 
 private:
   FlowName name;
