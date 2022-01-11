@@ -68,8 +68,10 @@ protected:
 class NodeMaker {
 protected:
   template <typename NodeT, typename... Values>
-  NodeT *makeNode_(Values &&...values) const {
-    return new NodeT(std::forward<Values>(values)...);
+  std::shared_ptr<NodeT> makeNode_(Values &&...values) const {
+    std::shared_ptr<NodeT> result;
+    result.reset(new NodeT(std::forward<Values>(values)...));
+    return result;
   };
 };
 

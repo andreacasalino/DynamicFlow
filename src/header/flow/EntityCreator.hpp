@@ -29,9 +29,7 @@ public:
   template <typename T> SourceHandler<T> makeSource(const std::string &name) {
     std::scoped_lock<std::mutex> creationLock(entityCreationMtx);
     checkName(name);
-    Source<T> *impl = this->template makeSource_<T>(name);
-    std::shared_ptr<Source<T>> source;
-    source.reset(impl);
+    std::shared_ptr<Source<T>> source = this->template makeSource_<T>(name);
     sources.emplace(source->getName(), source);
     allTogether.emplace(source->getName(), source);
     return SourceHandler<T>(source);
@@ -56,10 +54,10 @@ public:
     std::scoped_lock creationLock(entityCreationMtx, updateValuesMtx);
     checkName(name);
     checkIsInternalEntity(handlers...);
-    Node<T, Ts...> *impl = this->template makeNode_<Node<T, Ts...>>(
-        name, evaluation, extractStorer(handlers)...);
-    std::shared_ptr<Node<T, Ts...>> node;
-    node.reset(impl);
+    std::shared_ptr<Node<T, Ts...>> node =
+        this->template makeNode_<Node<T, Ts...>>(name, evaluation,
+                                                 extractStorer(handlers)...);
+    ;
     nodes.emplace(node->getName(), node);
     allTogether.emplace(node->getName(), node);
     requiringUpdate.emplace(node.get());
