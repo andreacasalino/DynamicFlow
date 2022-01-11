@@ -14,11 +14,13 @@ namespace flw {
 
 template <typename T> class NodeHandler : public ValueStorerDecorator<T> {
 public:
-  NodeHandler(std::shared_ptr<ValueStorer<T>> impl) : ValueStorerDecorator<T>(impl) {}
+  explicit NodeHandler(std::shared_ptr<ValueStorer<T>> impl)
+      : ValueStorerDecorator<T>(impl) {}
 
   NodeHandler(const NodeHandler<T> &o) : ValueStorerDecorator<T>(o){};
   NodeHandler<T> &operator==(const NodeHandler<T> &o) {
-    static_cast<ValueStorerDecorator<T> &>(*this) = static_cast<const ValueStorerDecorator<T> &>(o);
+    static_cast<ValueStorerDecorator<T> &>(*this) =
+        static_cast<const ValueStorerDecorator<T> &>(o);
     return *this;
   };
 };

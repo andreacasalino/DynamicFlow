@@ -35,7 +35,7 @@ public:
   };
 
 protected:
-  Source(const std::string &name) : FlowEntity(name){};
+  explicit Source(const std::string &name) : FlowEntity(name){};
 };
 
 class SourceMaker {

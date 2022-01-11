@@ -36,7 +36,7 @@ public:
    */
   template <typename T> NodeHandler<T> findNode(const std::string &name) const {
     std::scoped_lock<std::mutex> creationLock(entityCreationMtx);
-    auto it = nodes.find(name);
+    auto it = nodes.find(FlowName{name});
     if (it == nodes.end()) {
       throw Error("Inexistent");
     }
@@ -45,7 +45,7 @@ public:
     if (nullptr == impl) {
       throw Error("Wrong type asked");
     }
-    return impl;
+    return NodeHandler<T>{impl};
   };
 };
 

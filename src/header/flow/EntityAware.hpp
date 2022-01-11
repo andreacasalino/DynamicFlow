@@ -32,7 +32,7 @@ protected:
 
   template <typename T>
   SourceHandler<T> findSource_(const std::string &name) const {
-    auto it = sources.find(name);
+    auto it = sources.find(FlowName{name});
     if (it == sources.end()) {
       throw Error("Inexistent");
     }
@@ -41,7 +41,7 @@ protected:
     if (nullptr == impl) {
       throw Error("Wrong type asked");
     }
-    return impl;
+    return SourceHandler<T>{impl};
   };
 
   std::map<FlowName, FlowEntityPtr> sources;

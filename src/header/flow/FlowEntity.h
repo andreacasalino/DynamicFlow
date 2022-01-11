@@ -17,7 +17,7 @@ namespace flw {
  */
 class FlowName : public std::shared_ptr<const std::string> {
 public:
-  FlowName(const std::string &nameRaw);
+  explicit FlowName(const std::string &nameRaw);
 };
 
 inline bool operator<(const FlowName &a, const FlowName &b) {
@@ -34,7 +34,7 @@ public:
   inline FlowName getName() const { return name; }
 
 protected:
-  FlowEntity(const std::string &nameRaw);
+  explicit FlowEntity(const std::string &nameRaw);
 
 private:
   FlowName name;
