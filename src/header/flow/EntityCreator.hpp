@@ -99,7 +99,7 @@ protected:
 
   template <typename EntityT>
   void checkIsInternalEntity(const EntityT &entity) {
-    const auto *entityPtr =
+    const FlowEntity *entityPtr =
         dynamic_cast<const FlowEntity *>(&extractStorer(entity));
     if (nullptr == entityPtr) {
       throw Error("Not a valid entity");

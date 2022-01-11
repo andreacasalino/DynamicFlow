@@ -57,7 +57,8 @@ protected:
   void bindSubscribeHandlers(const Value &ancestor) {
     this->template bind<Index>(ancestor);
 
-    const auto *asDescAware = dynamic_cast<const DescendantsAware *>(&ancestor);
+    const DescendantsAware *asDescAware =
+        dynamic_cast<const DescendantsAware *>(&ancestor);
     if (nullptr == asDescAware) {
       throw Error("Not a DescendantsAware");
     }

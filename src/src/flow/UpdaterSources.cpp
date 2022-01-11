@@ -10,11 +10,12 @@
 namespace flw {
 
 void UpdaterSources::expandRequiringUpdate() {
-  std::set<EvaluateCapable *> open = requiringUpdate, close;
+  std::set<EvaluateCapable *> open = requiringUpdate;
+  std::set<EvaluateCapable *> close;
   while (!open.empty()) {
     auto *front = *open.begin();
     open.erase(open.begin());
-    auto *impl = dynamic_cast<DescendantsAware *>(front);
+    const auto *impl = dynamic_cast<DescendantsAware *>(front);
     for (auto *d : impl->descendants) {
       open.emplace(d);
     }
