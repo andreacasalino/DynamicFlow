@@ -32,8 +32,8 @@ public:
   template <typename T>
   void updateSource(const std::string &source_name,
                     std::unique_ptr<T> new_value) {
-    std::scoped_lock<std::mutex> creationLock(entityCreationMtx);
-    std::scoped_lock<std::mutex> updateLock(updateValuesMtx);
+    std::scoped_lock<std::mutex, std::mutex> creationLock(entityCreationMtx,
+                                                          updateValuesMtx);
     updateSource_(source_name, std::move(new_value));
     expandRequiringUpdate();
   };
@@ -43,8 +43,8 @@ public:
    */
   template <typename... UpdateInputs>
   void updateSources(UpdateInputs &&...inputs) {
-    std::scoped_lock<std::mutex> creationLock(entityCreationMtx);
-    std::scoped_lock<std::mutex> updateLock(updateValuesMtx);
+    std::scoped_lock<std::mutex, std::mutex> creationLock(entityCreationMtx,
+                                                          updateValuesMtx);
     updateSource_(std::forward<UpdateInputs>(inputs)...);
     expandRequiringUpdate();
   }

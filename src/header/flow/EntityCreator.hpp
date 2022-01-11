@@ -53,8 +53,8 @@ public:
   NodeHandler<T> makeNode(const std::string &name,
                           const std::function<T(const Ts &...)> &evaluation,
                           const Args &...handlers) {
-    std::scoped_lock<std::mutex> creationLock(entityCreationMtx);
-    std::scoped_lock<std::mutex> updaterLock(updateValuesMtx);
+    std::scoped_lock<std::mutex, std::mutex> creationLock(entityCreationMtx,
+                                                          updateValuesMtx);
     checkName(name);
     checkIsInternalEntity(handlers...);
     Node<T, Ts...> *impl = this->template makeNode_<Node<T, Ts...>>(
@@ -71,8 +71,8 @@ public:
     auto lockCreationOther = makeEntityCreationMtxLock(o);
     auto lockUpdateOther = makeUpdateValuesMtxLock(o);
 
-    std::scoped_lock<std::mutex> lockCreation(entityCreationMtx);
-    std::scoped_lock<std::mutex> lockUpdate(updateValuesMtx);
+    std::scoped_lock<std::mutex, std::mutex> lockCreation(entityCreationMtx,
+                                                          updateValuesMtx);
 
     this->sources = std::move(o.sources);
     this->nodes = std::move(o.nodes);
