@@ -85,7 +85,7 @@ public:
 
 protected:
   void checkName(const std::string &name) {
-    auto it = allTogether.find(name);
+    auto it = allTogether.find(FlowName{name});
     if (it != allTogether.end()) {
       throw Error(name, " is an already reserved name");
     }

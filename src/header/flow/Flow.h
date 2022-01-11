@@ -36,9 +36,11 @@ public:
  */
 class Flow : public EntityCreator, public FlowUpdatable {
 public:
+  virtual ~Flow() = default;
+
   Flow() = default;
 
-  Flow &operator=(Flow &&o) {
+  Flow &operator=(Flow &&o) noexcept {
     this->absorb(std::move(o));
     return *this;
   };

@@ -32,7 +32,7 @@ protected:
 
   template <typename T>
   SourceHandler<T> findSource_(const std::string &name) const {
-    auto it = sources.find(name);
+    auto it = sources.find(FlowName{name});
     if (it == sources.end()) {
       throw Error("Inexistent");
     }
