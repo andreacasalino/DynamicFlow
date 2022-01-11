@@ -20,16 +20,16 @@ public:
   virtual ~ValueStorerDecorator() override = default;
 
   bool isValue() const override {
-    std::lock_guard<std::mutex> lock(this->storer->valueMtx);
+    std::scoped_lock<std::mutex> lock(this->storer->valueMtx);
     return this->storer->value.isValue();
   };
   bool isException() const override {
-    std::lock_guard<std::mutex> lock(this->storer->valueMtx);
+    std::scoped_lock<std::mutex> lock(this->storer->valueMtx);
     return this->storer->value.isException();
   };
 
   std::exception_ptr getException() const override {
-    std::lock_guard<std::mutex> lock(this->storer->valueMtx);
+    std::scoped_lock<std::mutex> lock(this->storer->valueMtx);
     return this->storer->value.getException();
   };
 
@@ -40,7 +40,7 @@ public:
    * the value to use
    */
   template <typename FunctionT> bool useValue(FunctionT action) const {
-    std::lock_guard<std::mutex> lock(this->storer->valueMtx);
+    std::scoped_lock<std::mutex> lock(this->storer->valueMtx);
     if (this->storer->value.isException()) {
       throw Error("This object is an exception and not a value");
     }
@@ -74,7 +74,7 @@ protected:
 
   ValueStorerDecorator(const ValueStorerDecorator<T> &o)
       : ValueStorerDecorator(o.storer){};
-  ValueStorerDecorator<T>& operator=(const ValueStorerDecorator<T>& o) = delete;
+  ValueStorerDecorator<T> &operator=(const ValueStorerDecorator<T> &o) = delete;
 
   std::shared_ptr<ValueStorer<T>> storer;
 };

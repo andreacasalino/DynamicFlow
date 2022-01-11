@@ -16,11 +16,7 @@ namespace flw {
  * BLOCKING_EXCEPTION -> it is not possible to do the evaluation as a dependant
  * object stores an exception
  */
-enum class EvaluationResult {
-  SUCCESS = 1,
-  NOT_READY = 2,
-  BLOCKING_EXCEPTION = 3
-};
+enum EvaluationResult { SUCCESS = 1, NOT_READY = 2, BLOCKING_EXCEPTION = 3 };
 
 /**
  * @brief An object that can be update by evaluating an internal expression
