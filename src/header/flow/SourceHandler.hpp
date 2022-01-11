@@ -16,11 +16,13 @@ template <typename T> class SourceHandler : public ValueStorerDecorator<T> {
   friend class SourceHandlerResetter;
 
 public:
-  SourceHandler(std::shared_ptr<Source<T>> impl) : ValueStorerDecorator<T>(impl) {}
+  explicit SourceHandler(std::shared_ptr<Source<T>> impl)
+      : ValueStorerDecorator<T>(impl) {}
 
   SourceHandler(const SourceHandler<T> &o) : ValueStorerDecorator<T>(o){};
   SourceHandler<T> &operator==(const SourceHandler<T> &o) {
-    static_cast<ValueStorerDecorator<T> &>(*this) = static_cast<const ValueStorerDecorator<T> &>(o);
+    static_cast<ValueStorerDecorator<T> &>(*this) =
+        static_cast<const ValueStorerDecorator<T> &>(o);
     return *this;
   };
 

@@ -41,7 +41,7 @@ protected:
     if (nullptr == impl) {
       throw Error("Wrong type asked");
     }
-    return impl;
+    return SourceHandler<T>{impl};
   };
 
   std::map<FlowName, FlowEntityPtr> sources;
