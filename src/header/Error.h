@@ -16,7 +16,7 @@ namespace flw {
  */
 class Error : public std::runtime_error {
 public:
-  Error(const std::string &what);
+  explicit Error(const std::string &what);
 
   template <typename T, typename... Args>
   Error(T front, Args... args) : Error(Error::merge(front, args...)){};

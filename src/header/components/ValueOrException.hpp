@@ -52,7 +52,7 @@ public:
   /**
    * @brief The object is built passing the initial value to store
    */
-  ValueOrException(std::unique_ptr<T> newValue) {
+  explicit ValueOrException(std::unique_ptr<T> newValue) {
     this->reset(std::move(newValue));
   }
 
@@ -67,7 +67,7 @@ public:
   /**
    * @brief The object is built passing the initial exception to store
    */
-  ValueOrException(const std::exception_ptr &exception) {
+  explicit ValueOrException(const std::exception_ptr &exception) {
     this->reset(exception);
   };
 

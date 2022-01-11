@@ -106,7 +106,7 @@ void updateNodesParallel(std::set<EvaluateCapable *> &toUpdate,
 } // namespace
 
 void UpdaterFlow::updateFlow() {
-  std::lock_guard<std::mutex> updateLock(updateValuesMtx);
+  std::scoped_lock<std::mutex> updateLock(updateValuesMtx);
   busy = true;
   if (!requiringUpdate.empty()) {
     const std::size_t threads = threadsForUpdate;

@@ -29,7 +29,7 @@ public:
    * @input the new value to reset the stored one.
    */
   void reset(std::unique_ptr<T> newValue) {
-    std::lock_guard<std::mutex> lock(this->valueMtx);
+    std::scoped_lock<std::mutex> lock(this->valueMtx);
     this->value.reset(std::move(newValue));
     ++this->generations;
   };

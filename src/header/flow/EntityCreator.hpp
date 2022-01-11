@@ -27,7 +27,7 @@ public:
    * @throw In case a source with the passed name already exists in this flow
    */
   template <typename T> SourceHandler<T> makeSource(const std::string &name) {
-    std::lock_guard<std::mutex> creationLock(entityCreationMtx);
+    std::scoped_lock<std::mutex> creationLock(entityCreationMtx);
     checkName(name);
     Source<T> *impl = this->template makeSource_<T>(name);
     std::shared_ptr<Source<T>> source;
@@ -45,15 +45,16 @@ public:
    * @input the entities that the node to create depends on
    * @return An handler storing the newly created node
    * @throw In case a node with the passed name already exists in this flow
-   * @throw In case one of the passed handlers is neither a NodeHandler nor a SourceHandler
+   * @throw In case one of the passed handlers is neither a NodeHandler nor a
+   * SourceHandler
    * @throw In case one of the passed handlers is not contained in this flow
    */
   template <typename T, typename... Ts, typename... Args>
   NodeHandler<T> makeNode(const std::string &name,
                           const std::function<T(const Ts &...)> &evaluation,
                           const Args &...handlers) {
-    std::lock_guard<std::mutex> creationLock(entityCreationMtx);
-    std::lock_guard<std::mutex> updaterLock(updateValuesMtx);
+    std::scoped_lock<std::mutex> creationLock(entityCreationMtx);
+    std::scoped_lock<std::mutex> updaterLock(updateValuesMtx);
     checkName(name);
     checkIsInternalEntity(handlers...);
     Node<T, Ts...> *impl = this->template makeNode_<Node<T, Ts...>>(
@@ -70,8 +71,8 @@ public:
     auto lockCreationOther = makeEntityCreationMtxLock(o);
     auto lockUpdateOther = makeUpdateValuesMtxLock(o);
 
-    std::lock_guard<std::mutex> lockCreation(entityCreationMtx);
-    std::lock_guard<std::mutex> lockUpdate(updateValuesMtx);
+    std::scoped_lock<std::mutex> lockCreation(entityCreationMtx);
+    std::scoped_lock<std::mutex> lockUpdate(updateValuesMtx);
 
     this->sources = std::move(o.sources);
     this->nodes = std::move(o.nodes);

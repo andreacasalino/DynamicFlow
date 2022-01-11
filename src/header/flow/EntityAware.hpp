@@ -10,8 +10,8 @@
 #include <flow/FlowEntity.h>
 #include <flow/SourceHandler.hpp>
 #include <map>
-#include <mutex>
 #include <memory>
+#include <mutex>
 
 namespace flw {
 
@@ -51,8 +51,10 @@ protected:
 
   mutable std::mutex entityCreationMtx;
 
-  static std::unique_ptr<std::lock_guard<std::mutex>> makeEntityCreationMtxLock(EntityAware& subject) {
-      return std::make_unique<std::lock_guard<std::mutex>>(subject.entityCreationMtx);
+  static std::unique_ptr<std::scoped_lock<std::mutex>>
+  makeEntityCreationMtxLock(EntityAware &subject) {
+    return std::make_unique<std::scoped_lock<std::mutex>>(
+        subject.entityCreationMtx);
   };
 };
 

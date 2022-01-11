@@ -9,7 +9,7 @@
 
 namespace flw {
 bool Updater::isUpdated() const {
-  std::lock_guard<std::mutex> updateLock(updateValuesMtx);
+  std::scoped_lock<std::mutex> updateLock(updateValuesMtx);
   return requiringUpdate.empty();
 }
 } // namespace flw

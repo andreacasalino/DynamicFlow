@@ -20,7 +20,7 @@ struct EvaluatorRecurr {
   static EvaluationResult evaluate(const FunctionT &evaluation,
                                    EvaluatorT &subject, const Args &...args) {
     const auto &ancestor = subject.template getAncestor<Position>().ancestor;
-    std::lock_guard<std::mutex> lock(ancestor->valueMtx);
+    std::scoped_lock<std::mutex> lock(ancestor->valueMtx);
     if (ancestor->value.isException()) {
       return EvaluationResult::BLOCKING_EXCEPTION;
     }
@@ -40,7 +40,7 @@ struct EvaluatorRecurr<Position, FunctionT, EvaluatorT, ResultT, T> {
   static EvaluationResult evaluate(const FunctionT &evaluation,
                                    EvaluatorT &subject, const Args &...args) {
     const auto &ancestor = subject.template getAncestor<Position>().ancestor;
-    std::lock_guard<std::mutex> lock(ancestor->valueMtx);
+    std::scoped_lock<std::mutex> lock(ancestor->valueMtx);
     if (ancestor->value.isException()) {
       subject.value.resetException(std::make_exception_ptr(
           Error("Evaluation blocked by exception on ancestors")));
@@ -77,7 +77,7 @@ class Evaluator : public ValueStorer<ResultT>,
                   public EvaluateCapable {
 public:
   EvaluationResult evaluate() override {
-    std::lock_guard<std::mutex> lock(ValueStorer<ResultT>::valueMtx);
+    std::scoped_lock<std::mutex> lock(ValueStorer<ResultT>::valueMtx);
     ValueStorer<ResultT>::value.reset();
     return EvaluatorRecurr<0, std::function<ResultT(const Ts &...)>,
                            Evaluator<ResultT, Ts...>, ResultT,
@@ -86,7 +86,7 @@ public:
 
 protected:
   template <typename... Values>
-  Evaluator(const std::function<ResultT(const Ts &...)> &evaluation)
+  explicit Evaluator(const std::function<ResultT(const Ts &...)> &evaluation)
       : evaluation(evaluation){};
 
 private:
