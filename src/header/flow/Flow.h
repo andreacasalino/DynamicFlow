@@ -36,7 +36,7 @@ public:
  */
 class Flow : public EntityCreator, public FlowUpdatable {
 public:
-  virtual ~Flow() = default;
+  virtual ~Flow() override = default;
 
   Flow() = default;
 
