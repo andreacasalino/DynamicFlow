@@ -26,13 +26,14 @@ public:
    * @input the name of the source to update
    * @input the value to use for updating the source
    * @throw In case a source with that name does not exist in this flow
-   * @throw In case a source with that name exists, but has a different type other than <T>
+   * @throw In case a source with that name exists, but has a different type
+   * other than <T>
    */
   template <typename T>
   void updateSource(const std::string &source_name,
                     std::unique_ptr<T> new_value) {
-    std::lock_guard<std::mutex> creationLock(entityCreationMtx);
-    std::lock_guard<std::mutex> updateLock(updateValuesMtx);
+    std::scoped_lock<std::mutex> creationLock(entityCreationMtx);
+    std::scoped_lock<std::mutex> updateLock(updateValuesMtx);
     updateSource_(source_name, std::move(new_value));
     expandRequiringUpdate();
   };
@@ -42,8 +43,8 @@ public:
    */
   template <typename... UpdateInputs>
   void updateSources(UpdateInputs &&...inputs) {
-    std::lock_guard<std::mutex> creationLock(entityCreationMtx);
-    std::lock_guard<std::mutex> updateLock(updateValuesMtx);
+    std::scoped_lock<std::mutex> creationLock(entityCreationMtx);
+    std::scoped_lock<std::mutex> updateLock(updateValuesMtx);
     updateSource_(std::forward<UpdateInputs>(inputs)...);
     expandRequiringUpdate();
   }

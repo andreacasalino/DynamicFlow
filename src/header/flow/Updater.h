@@ -8,9 +8,9 @@
 #pragma once
 
 #include <components/EvaluateCapable.h>
+#include <memory>
 #include <mutex>
 #include <set>
-#include <memory>
 
 namespace flw {
 
@@ -33,8 +33,10 @@ protected:
   mutable std::mutex updateValuesMtx;
   std::set<EvaluateCapable *> requiringUpdate;
 
-  static std::unique_ptr<std::lock_guard<std::mutex>> makeUpdateValuesMtxLock(Updater& subject) {
-      return std::make_unique<std::lock_guard<std::mutex>>(subject.updateValuesMtx);
+  static std::unique_ptr<std::scoped_lock<std::mutex>>
+  makeUpdateValuesMtxLock(Updater &subject) {
+    return std::make_unique<std::scoped_lock<std::mutex>>(
+        subject.updateValuesMtx);
   };
 };
 
