@@ -27,8 +27,8 @@ public:
   };
 
 private:
-  void reset(std::unique_ptr<T> newValue) {
-    Source<T> *sourcePt = dynamic_cast<Source<T> *>(this->storer.get());
+  void reset(std::unique_ptr<T> newValue) const {
+    auto *sourcePt = dynamic_cast<Source<T> *>(this->storer.get());
     sourcePt->reset(std::move(newValue));
   };
 };
