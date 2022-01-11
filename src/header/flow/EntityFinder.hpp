@@ -45,7 +45,7 @@ public:
     if (nullptr == impl) {
       throw Error("Wrong type asked");
     }
-    return impl;
+    return NodeHandler<T>{impl};
   };
 };
 
