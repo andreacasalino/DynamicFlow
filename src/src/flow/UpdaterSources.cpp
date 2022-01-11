@@ -14,7 +14,7 @@ void UpdaterSources::expandRequiringUpdate() {
   while (!open.empty()) {
     auto *front = *open.begin();
     open.erase(open.begin());
-    DescendantsAware *impl = dynamic_cast<DescendantsAware *>(front);
+    auto *impl = dynamic_cast<DescendantsAware *>(front);
     for (auto *d : impl->descendants) {
       open.emplace(d);
     }
