@@ -17,7 +17,7 @@ class ValueStorerDecorator : public ValueOrExceptionAware {
   friend class ValueStorerExtractor;
 
 public:
-  virtual ~ValueStorerDecorator() override = default;
+  ~ValueStorerDecorator() override = default;
 
   bool isValue() const override {
     std::scoped_lock<std::mutex> lock(this->storer->valueMtx);

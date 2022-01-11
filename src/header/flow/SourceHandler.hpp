@@ -36,7 +36,7 @@ private:
 class SourceHandlerResetter {
 protected:
   template <typename T>
-  void reset(std::unique_ptr<T> newValue, SourceHandler<T> &subject) {
+  void reset(std::unique_ptr<T> newValue, SourceHandler<T> &subject) const {
     subject.reset(std::move(newValue));
   };
 };
