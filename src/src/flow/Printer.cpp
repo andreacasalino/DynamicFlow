@@ -5,7 +5,6 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#include <Error.h>
 #include <components/DescendantsAware.hpp>
 #include <flow/Printer.h>
 #include <fstream>
@@ -23,8 +22,6 @@ void printStatus(std::ostream &stream, const ValueOrExceptionAware &entity) {
     stream << "EXCEPTION: ";
     try {
       std::rethrow_exception(entity.getException());
-    } catch (const Error &e) {
-      stream << " Error: " << e.what();
     } catch (const std::exception &e) {
       stream << e.what();
     }
@@ -39,14 +36,13 @@ template <std::size_t Size = DEFAULT_SEP_SIZE> struct Separator {
   Separator() = default;
 };
 template <std::size_t Size>
-std::ostream &operator<<(std::ostream &stream,
-                         [[maybe_unused]] const Separator<Size> &sep) {
+std::ostream &operator<<(std::ostream &stream, const Separator<Size> &sep) {
   for (std::size_t k = 0; k < Size; ++k) {
     stream << ' ';
   }
   return stream;
 };
-static const Separator DEFAULT_SEPARATOR;
+const Separator DEFAULT_SEPARATOR;
 
 template <typename EntityContainer>
 void printNames(std::ostream &stream, const EntityContainer &collection) {
@@ -82,16 +78,15 @@ std::list<const FlowEntity *> getParents(const FlowEntity *subject,
 
 void PrintBasic::print(std::ostream &stream) const {
   std::vector<EntityInfo> data;
-  for (auto it = allTogether.begin(); it != allTogether.end(); ++it) {
-    data.emplace_back(
-        EntityInfo{it->second.get(), std::set<const FlowEntity *>{}});
-    const auto *asDescAware =
-        dynamic_cast<const DescendantsAware *>(it->second.get());
+  for (const auto &[name, entity] : allTogether) {
+    data.emplace_back(EntityInfo{entity.get(), std::set<const FlowEntity *>{}});
+    const DescendantsAware *asDescAware =
+        dynamic_cast<const DescendantsAware *>(entity.get());
     if (nullptr == asDescAware) {
       throw Error("Bad casting when printing");
     }
     for (auto d : asDescAware->descendants) {
-      const auto *asEntity = dynamic_cast<const FlowEntity *>(d);
+      const FlowEntity *asEntity = dynamic_cast<const FlowEntity *>(d);
       if (nullptr == asEntity) {
         throw Error("Bad casting when printing");
       }
@@ -101,7 +96,7 @@ void PrintBasic::print(std::ostream &stream) const {
   for (const auto &d : data) {
     stream << "name:" << *d.entity->getName() << DEFAULT_SEPARATOR;
 
-    const auto *asValueAware =
+    const ValueOrExceptionAware *asValueAware =
         dynamic_cast<const ValueOrExceptionAware *>(d.entity);
     if (nullptr == asValueAware) {
       throw Error("Bad casting when printing");

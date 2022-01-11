@@ -60,7 +60,7 @@ protected:
                      std::unique_ptr<T> new_value) {
     SourceHandler<T> handler = this->template findSource_<T>(source_name);
     this->reset(std::move(new_value), handler);
-    auto *impl = dynamic_cast<Source<T> *>(&extractStorer(handler));
+    Source<T> *impl = dynamic_cast<Source<T> *>(&extractStorer(handler));
     for (auto *d : impl->descendants) {
       requiringUpdate.emplace(d);
     }
