@@ -42,7 +42,7 @@ std::ostream &operator<<(std::ostream &stream, const Separator<Size> &sep) {
   }
   return stream;
 };
-static const Separator DEFAULT_SEPARATOR;
+const Separator DEFAULT_SEPARATOR;
 
 template <typename EntityContainer>
 void printNames(std::ostream &stream, const EntityContainer &collection) {
@@ -78,11 +78,10 @@ std::list<const FlowEntity *> getParents(const FlowEntity *subject,
 
 void PrintBasic::print(std::ostream &stream) const {
   std::vector<EntityInfo> data;
-  for (auto it = allTogether.begin(); it != allTogether.end(); ++it) {
-    data.emplace_back(
-        EntityInfo{it->second.get(), std::set<const FlowEntity *>{}});
+  for (const auto &[name, entity] : allTogether) {
+    data.emplace_back(EntityInfo{entity.get(), std::set<const FlowEntity *>{}});
     const DescendantsAware *asDescAware =
-        dynamic_cast<const DescendantsAware *>(it->second.get());
+        dynamic_cast<const DescendantsAware *>(entity.get());
     if (nullptr == asDescAware) {
       throw Error("Bad casting when printing");
     }
@@ -127,7 +126,8 @@ void log(const std::string &fileName, const flw::PrintCapable &subject) {
 
 } // namespace flw
 
-std::ostream &operator<<(std::ostream &stream, const flw::PrintCapable &subject) {
+std::ostream &operator<<(std::ostream &stream,
+                         const flw::PrintCapable &subject) {
   subject.print(stream);
   return stream;
 }
