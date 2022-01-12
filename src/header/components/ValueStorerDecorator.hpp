@@ -72,10 +72,6 @@ protected:
     }
   };
 
-  ValueStorerDecorator(const ValueStorerDecorator<T> &o)
-      : ValueStorerDecorator(o.storer){};
-  ValueStorerDecorator<T> &operator=(const ValueStorerDecorator<T> &o) = delete;
-
   std::shared_ptr<ValueStorer<T>> storer;
 };
 

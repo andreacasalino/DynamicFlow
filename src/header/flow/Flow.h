@@ -39,10 +39,5 @@ public:
   ~Flow() override = default;
 
   Flow() = default;
-
-  Flow &operator=(Flow &&o) noexcept {
-    this->absorb(std::move(o));
-    return *this;
-  };
 };
 } // namespace flw
