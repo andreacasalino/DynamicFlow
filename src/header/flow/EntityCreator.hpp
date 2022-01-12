@@ -57,7 +57,7 @@ public:
     std::shared_ptr<Node<T, Ts...>> node =
         this->template makeNode_<Node<T, Ts...>>(name, evaluation,
                                                  extractStorer(handlers)...);
-    ;
+
     nodes.emplace(node->getName(), node);
     allTogether.emplace(node->getName(), node);
     requiringUpdate.emplace(node.get());
