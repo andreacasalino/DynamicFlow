@@ -14,7 +14,7 @@ namespace flw {
 
 /**
  * @brief An object aware of its descendants, i.e.
- * objects whose internal expression needs this one 
+ * objects whose internal expression needs this one
  * to be evaluated
  */
 class DescendantsAware {
