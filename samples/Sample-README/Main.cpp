@@ -31,13 +31,14 @@ int main() {
                      source02.getName(),
                      std::make_unique<std::string>("hello"));
 
-  // update the entire flow
   flow.updateFlow();
 
   // you can also update the sources one at a time and then update the flow
   flow.updateSources(source01.getName(), std::make_unique<int>(2));
   flow.updateSources(source02.getName(),
                      std::make_unique<std::string>("hello"));
+
+  // update the entire flow
   flow.updateFlow();
 
   return EXIT_SUCCESS;
