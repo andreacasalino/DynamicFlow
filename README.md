@@ -69,10 +69,7 @@ flow.updateFlow();
 ```
 
 The functionalities provided are completely thread-safe (by the way feel free to report any bug if you discover a strange behaviour ;)).
-Moreover, this package is already embedded with the functionality to update the flow by exploiting **multi threading**. From the outside, only the number of threads to use
-must be specified.
-
-METTERE esempi cpp di come si gestisce multi threading.
+Moreover, this package is already embedded with the functionality to update the flow by exploiting **multi threading**. From the outside, only the number of threads to use must be specified.
 
 **Contents**
 
