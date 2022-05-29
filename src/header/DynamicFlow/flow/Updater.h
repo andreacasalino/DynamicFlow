@@ -7,7 +7,8 @@
 
 #pragma once
 
-#include <components/EvaluateCapable.h>
+#include <DynamicFlow/components/EvaluateCapable.h>
+
 #include <memory>
 #include <mutex>
 #include <set>

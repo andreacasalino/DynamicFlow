@@ -5,7 +5,7 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#include <flow/UpdaterFlow.h>
+#include <DynamicFlow/flow/UpdaterFlow.h>
 #include <omp.h>
 #include <vector>
 

@@ -18,7 +18,7 @@ Then, you can subsequently update the entire network, re-computing only the node
 Creating the sources can be easily done on this way:
 
 ```cpp
-#include <flow/Flow.h>
+#include <DynamicFlow/flow/Flow.h>
 using namespace flw;
 
 // build a new flow

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <Error.h>
+#include <DynamicFlow/Error.h>
 #include <memory>
 
 namespace flw {
@@ -26,7 +26,7 @@ public:
   virtual bool isException() const = 0;
 
   /**
-   * @return the stored exception. Returns nullptr when the 
+   * @return the stored exception. Returns nullptr when the
    * object is not currently storing an exception
    */
   virtual std::exception_ptr getException() const = 0;
@@ -34,7 +34,6 @@ public:
 protected:
   ValueOrExceptionAware() = default;
 };
-
 
 /**
  * @brief An object that may store a value to use or an exception
@@ -44,8 +43,9 @@ protected:
  */
 template <typename T> class ValueOrException : public ValueOrExceptionAware {
 public:
-  /** 
-   * @brief After construction neither a value nor an exception is actually stored.
+  /**
+   * @brief After construction neither a value nor an exception is actually
+   * stored.
    */
   ValueOrException() = default;
 
@@ -89,12 +89,14 @@ public:
   };
 
   /**
-   * @return the value currently stored. Might be a nullptr is the object is not currently a value
+   * @return the value currently stored. Might be a nullptr is the object is not
+   * currently a value
    */
   const T *get() const { return this->value.get(); };
 
   /**
-   * @return the value currently stored. Might be a nullptr is the object is not currently a value
+   * @return the value currently stored. Might be a nullptr is the object is not
+   * currently a value
    */
   T *get() { return this->value.get(); };
 

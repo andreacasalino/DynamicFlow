@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <flow/EntityAware.hpp>
-#include <flow/Flow.h>
+#include <DynamicFlow/flow/EntityAware.hpp>
+#include <DynamicFlow/flow/Flow.h>
 #include <ostream>
 
 namespace flw {
@@ -29,9 +29,11 @@ public:
 };
 
 /**
- * @throw In case the passed fileName is an invalid file path for creating the log
+ * @throw In case the passed fileName is an invalid file path for creating the
+ * log
  */
 void log(const std::string &fileName, const flw::PrintCapable &subject);
 } // namespace flw
 
-std::ostream &operator<<(std::ostream &stream, const flw::PrintCapable &subject);
+std::ostream &operator<<(std::ostream &stream,
+                         const flw::PrintCapable &subject);

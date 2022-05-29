@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <flow/EntityAware.hpp>
-#include <flow/Updater.h>
+#include <DynamicFlow/flow/EntityAware.hpp>
+#include <DynamicFlow/flow/Updater.h>
 
 namespace flw {
 

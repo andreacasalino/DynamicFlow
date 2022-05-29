@@ -1,7 +1,7 @@
 #pragma once
 
-#include <flow/Flow.h>
-#include <flow/NodeHandler.hpp>
+#include <DynamicFlow/flow/Flow.h>
+#include <DynamicFlow/flow/NodeHandler.hpp>
 #include <list>
 
 class NodeLogger {

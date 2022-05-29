@@ -5,10 +5,8 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#include <Error.h>
+#include <DynamicFlow/Error.h>
 
 namespace flw {
-    Error::Error(const std::string& what)
-        : std::runtime_error(what) {
-    }
-}
+Error::Error(const std::string &what) : std::runtime_error(what) {}
+} // namespace flw

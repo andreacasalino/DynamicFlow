@@ -5,8 +5,9 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
+#include <DynamicFlow/flow/FlowEntity.h>
+
 #include <atomic>
-#include <flow/FlowEntity.h>
 #include <sstream>
 
 namespace flw {

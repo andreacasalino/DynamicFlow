@@ -5,7 +5,7 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#include <flow/Updater.h>
+#include <DynamicFlow/flow/Updater.h>
 
 namespace flw {
 bool Updater::isUpdated() const {

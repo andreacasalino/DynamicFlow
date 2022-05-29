@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <components/AncestorsAware.hpp>
-#include <components/EvaluateCapable.h>
+#include <DynamicFlow/components/AncestorsAware.hpp>
+#include <DynamicFlow/components/EvaluateCapable.h>
 #include <functional>
 
 namespace flw {

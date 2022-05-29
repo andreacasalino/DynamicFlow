@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <components/TypeExtractor.hpp>
-#include <components/ValueStorer.hpp>
+#include <DynamicFlow/components/TypeExtractor.hpp>
+#include <DynamicFlow/components/ValueStorer.hpp>
 
 namespace flw {
 
