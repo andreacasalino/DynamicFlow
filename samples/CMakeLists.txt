@@ -1,3 +1,5 @@
+project(Flow-Samples)
+
 include(cmake/make-sample.cmake)
 
 add_subdirectory(Sample-README)
