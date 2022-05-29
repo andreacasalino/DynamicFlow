@@ -1,6 +1,6 @@
 #include <string>
 
-#include <flow/Flow.h>
+#include <DynamicFlow/flow/Flow.h>
 using namespace flw;
 
 int main() {

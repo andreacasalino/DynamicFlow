@@ -5,8 +5,8 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#include <components/DescendantsAware.hpp>
-#include <flow/Printer.h>
+#include <DynamicFlow/components/DescendantsAware.hpp>
+#include <DynamicFlow/flow/Printer.h>
 #include <fstream>
 #include <set>
 

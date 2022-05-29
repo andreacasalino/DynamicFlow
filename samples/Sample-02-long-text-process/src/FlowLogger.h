@@ -1,6 +1,6 @@
 #pragma once
 
-#include <flow/Printer.h>
+#include <DynamicFlow/flow/Printer.h>
 
 class FlowLogger {
 public:

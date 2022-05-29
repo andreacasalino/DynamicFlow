@@ -5,21 +5,17 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#include <components/ValueStorer.hpp>
+#include <DynamicFlow/components/ValueStorer.hpp>
 
-template<typename T>
-class ValueStorerTest
-	: public flw::ValueStorer<T> {
+template <typename T> class ValueStorerTest : public flw::ValueStorer<T> {
 public:
-	ValueStorerTest() = default;
+  ValueStorerTest() = default;
 
-    template<typename ... Args>
-    void reset(Args ... args) {
-        try {
-            this->value.reset(std::make_unique<T>(args...));
-        }
-        catch (const std::exception & e) {
-            this->value.resetException(std::make_exception_ptr(e));
-        }
-    };
+  template <typename... Args> void reset(Args... args) {
+    try {
+      this->value.reset(std::make_unique<T>(args...));
+    } catch (const std::exception &e) {
+      this->value.resetException(std::make_exception_ptr(e));
+    }
+  };
 };

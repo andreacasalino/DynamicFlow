@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <flow/FlowEntity.h>
-#include <flow/SourceHandler.hpp>
+#include <DynamicFlow/flow/FlowEntity.h>
+#include <DynamicFlow/flow/SourceHandler.hpp>
 #include <map>
 #include <memory>
 #include <mutex>

@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include <components/DescendantsAware.hpp>
-#include <components/ValueStorer.hpp>
-#include <flow/FlowEntity.h>
+#include <DynamicFlow/components/DescendantsAware.hpp>
+#include <DynamicFlow/components/ValueStorer.hpp>
+#include <DynamicFlow/flow/FlowEntity.h>
 
 namespace flw {
 

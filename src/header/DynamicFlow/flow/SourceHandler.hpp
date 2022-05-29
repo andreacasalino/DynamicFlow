@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <components/ValueStorerDecorator.hpp>
-#include <flow/Source.hpp>
+#include <DynamicFlow/components/ValueStorerDecorator.hpp>
+#include <DynamicFlow/flow/Source.hpp>
 
 namespace flw {
 

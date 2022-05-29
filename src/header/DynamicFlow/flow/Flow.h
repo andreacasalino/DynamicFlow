@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include <flow/EntityCreator.hpp>
-#include <flow/EntityFinder.hpp>
-#include <flow/UpdaterFlow.h>
-#include <flow/UpdaterSources.h>
+#include <DynamicFlow/flow/EntityCreator.hpp>
+#include <DynamicFlow/flow/EntityFinder.hpp>
+#include <DynamicFlow/flow/UpdaterFlow.h>
+#include <DynamicFlow/flow/UpdaterSources.h>
 
 namespace flw {
 

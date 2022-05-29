@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <components/ValueStorer.hpp>
-#include <flow/FlowEntity.h>
+#include <DynamicFlow/components/ValueStorer.hpp>
+#include <DynamicFlow/flow/FlowEntity.h>
 
 namespace flw {
 

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <components/EvaluateCapable.h>
+#include <DynamicFlow/components/EvaluateCapable.h>
 #include <list>
 
 namespace flw {

@@ -5,7 +5,7 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#include <flow/Flow.h>
+#include <DynamicFlow/flow/Flow.h>
 #include <gtest/gtest.h>
 #include <sstream>
 #include <thread>
