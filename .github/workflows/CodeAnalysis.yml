@@ -43,14 +43,7 @@ jobs:
           build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build build/ --config Release
       - name: Run tests to generate coverage info
         run: |
-          ./build/tests/Test01-value-or-exception
-          ./build/tests/Test02-ancestors-aware
-          ./build/tests/Test03-evaluator
-          ./build/tests/Test04-nodes-creation
-          ./build/tests/Test05-flow-creation
-          ./build/tests/Test06-flow-update
-          ./build/tests/Test07-flow-busy-check
-          ./build/tests/Test08-flow-update-lazyness          
+          ./build/tests/DynamicFlowTests          
           python3 .github/workflows/gcov_file_generation.py
       - name: Run sonar-scanner
         env:

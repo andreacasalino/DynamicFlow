@@ -1,1 +1,1 @@
-MAKE_SAMPLE(Sample-02-long-text-process)
+MAKE_SAMPLE(ON)
