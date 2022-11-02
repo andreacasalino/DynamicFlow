@@ -1,6 +1,6 @@
-add_executable(Sample-README Main.cpp)
+add_executable(DynamicFlow-Sample-README Main.cpp)
 
-target_link_libraries(Sample-README
+target_link_libraries(DynamicFlow-Sample-README
 PUBLIC
     DynamicFlow
 )

@@ -1,5 +1,3 @@
-project(Flow-Tests)
-	
 if (WIN32)
 	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 endif (WIN32)
@@ -11,28 +9,22 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-function(MAKE_TEST NAME)
-	add_executable(${NAME} ${NAME}.cpp)
+set(TEST_NAME DynamicFlowTests)
 
-	target_link_libraries(${NAME}
-	PUBLIC
-		gtest
-		DynamicFlow
-	)
+file(GLOB TEST_SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp  ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 
-	# target_compile_definitions(${NAME} 
-	# PUBLIC
-		# -D TEST_FOLDER="${CMAKE_CURRENT_SOURCE_DIR}/"
-		# # -D SAMPLE_FOLDER="${CMAKE_CURRENT_SOURCE_DIR}/../../Samples/"
-	# )
+add_executable(${TEST_NAME} ${TEST_SRC})
+target_link_libraries(${TEST_NAME}
+PUBLIC
+	gtest
+	gtest_main
+	DynamicFlow
+)
 
-	install(TARGETS ${NAME})
-endfunction()
+# target_compile_definitions(${TEST_NAME} 
+# PUBLIC
+	# -D TEST_FOLDER="${CMAKE_CURRENT_SOURCE_DIR}/"
+	# # -D SAMPLE_FOLDER="${CMAKE_CURRENT_SOURCE_DIR}/../../Samples/"
+# )
 
-file(GLOB TESTS [RELATIVE path] ./*.cpp)
-foreach(test ${TESTS})
-	get_filename_component(TEST_NAME_EXTENSION ${test} NAME [CACHE])
-	get_filename_component(TEST_NAME ${TEST_NAME_EXTENSION} NAME_WE [CACHE])
-	message(STATUS "Creating test named: ${TEST_NAME}")
-	MAKE_TEST(${TEST_NAME})
-endforeach()
+install(TARGETS ${TEST_NAME})

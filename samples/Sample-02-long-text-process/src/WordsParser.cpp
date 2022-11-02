@@ -1,5 +1,6 @@
 #include <WordsParser.h>
 
+namespace flw::sample {
 std::size_t countSpaces(const std::string &line) {
   std::size_t result = 0;
   for (std::size_t k = 0; k < line.size(); ++k) {
@@ -25,3 +26,4 @@ std::list<std::string> parseWords(const std::string &line) {
   }
   return result;
 }
+} // namespace flw::sample

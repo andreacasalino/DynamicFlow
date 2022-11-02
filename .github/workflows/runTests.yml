@@ -37,22 +37,8 @@ jobs:
       run:  cmake --build ./build --config Release
     - name: Install
       run:  cmake --install ./build --config Release
-    - name: Test-01
-      run: ./artifacts/bin/Test01-value-or-exception
-    - name: Test-02
-      run: ./artifacts/bin/Test02-ancestors-aware
-    - name: Test-03
-      run: ./artifacts/bin/Test03-evaluator
-    - name: Test-04
-      run: ./artifacts/bin/Test04-nodes-creation
-    - name: Test-05
-      run: ./artifacts/bin/Test05-flow-creation
-    - name: Test-06
-      run: ./artifacts/bin/Test06-flow-update    
-    - name: Test-07
-      run: ./artifacts/bin/Test07-flow-busy-check
-    - name: Test-08
-      run: ./artifacts/bin/Test08-flow-update-lazyness
+    - name: Tests
+      run: ./artifacts/bin/DynamicFlowTests
     - uses: actions/upload-artifact@v2
       with:
         path: artifacts
