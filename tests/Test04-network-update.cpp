@@ -6,290 +6,217 @@
 //  **/
 #include <gtest/gtest.h>
 
-#include "ValueExtractor.h"
-#include <DynamicFlow/Network.h>
+#include "Common.h"
+#include <DynamicFlow/Network.hxx>
 
-#include <sstream>
+#include <mutex>
 
-namespace {
-template <std::size_t Increment> class EpochIncrementGuard {
-public:
-  EpochIncrementGuard(const flw::Value &subject) : subject_(subject) {
-    initial_epoch_ = subject_.epoch();
+struct UpdateTest : ::testing::Test {
+  flw::Flow flow;
+
+  struct Info {
+    std::string value;
+    std::size_t epoch = 0;
+  };
+  std::vector<Info> values;
+
+  void set(std::size_t index, const std::string &val) {
+    values[index].value = val;
+    ++values[index].epoch;
   }
-  ~EpochIncrementGuard() {
-    auto epoch = subject_.epoch();
-    EXPECT_EQ(Increment, epoch - initial_epoch_);
+
+  const auto &at(std::size_t index) const { return values.at(index); }
+
+  template <bool Throw>
+  flw::Handler<std::string> makeNode(const flw::Handler<std::string> &s) {
+    values.emplace_back();
+    return flow.makeNode<std::string, std::string>(
+        [lam = flw::test::ComposerLambda<Throw>{}](const std::string &val) {
+          return lam(val);
+        },
+        s, "",
+        std::bind(&UpdateTest::set, std::ref(*this), values.size() - 1,
+                  std::placeholders::_1));
   }
 
-private:
-  const flw::Value &subject_;
-  std::size_t initial_epoch_;
+  template <bool Throw>
+  flw::Handler<std::string> makeNode(const flw::Handler<std::string> &s0,
+                                     const flw::Handler<std::string> &s1) {
+    values.emplace_back();
+    return flow.makeNode<std::string, std::string, std::string>(
+        [lam = flw::test::ComposerLambda<Throw>{}](
+            const std::string &a, const std::string &b) { return lam(a, b); },
+        s0, s1, "",
+        std::bind(&UpdateTest::set, std::ref(*this), values.size() - 1,
+                  std::placeholders::_1));
+  }
 };
 
-using EpochUnchangedGuard = EpochIncrementGuard<0>;
-using EpochSingleIncrementGuard = EpochIncrementGuard<1>;
+TEST_F(UpdateTest, one_source_one_node_update) {
+  auto source = flow.makeSource<std::string>("Hello");
 
-std::string predicate_unary(const std::string &e) { return e; }
+  auto node = this->makeNode<false>(source);
 
-std::string predicate_binary(const std::string &a, const std::string &b) {
-  std::stringstream stream;
-  stream << a << b;
-  auto retVal = stream.str();
-  return retVal;
-}
-} // namespace
-
-TEST(Flow, one_source_one_node_update) {
-  flw::Flow flow;
-
-  auto source = flow.makeSource<std::string>();
-
-  auto node =
-      flow.makeNode<std::string, std::string>(predicate_unary, "node", source);
-
-  const std::string source_val = "Hello";
-  EXPECT_EQ(flow.status(), flw::FlowStatus::IDLE);
-  {
-    EpochSingleIncrementGuard node_guard(node.getValue());
-    EpochSingleIncrementGuard source_guard(source.getValue());
-
-    source.update(source_val);
-    flow.update();
-  }
-  EXPECT_EQ(flow.status(), flw::FlowStatus::IDLE);
-  EXPECT_EQ(flw::ValueExtractor::impl().get(node.getValue()), source_val);
+  ASSERT_EQ(flow.status(), flw::FlowStatus::UPDATE_NOT_REQUIRED);
+  EXPECT_EQ(at(0).value, "Hello");
+  EXPECT_EQ(at(0).epoch, 1);
 }
 
-TEST(Flow, two_source_one_node_update) {
-  flw::Flow flow;
+TEST_F(UpdateTest, one_source_one_node_update_not_needed_as_same_val) {
+  auto source = flow.makeSource<std::string>("Hello");
 
-  auto source1 = flow.makeSource<std::string>();
-  auto source2 = flow.makeSource<std::string>();
+  auto node = this->makeNode<false>(source);
 
-  auto node = flow.makeNode<std::string, std::string, std::string>(
-      predicate_binary, "node", source1, source2);
-
-  const std::string source1_val = "Hello";
-  const std::string source2_val = "World";
-  EXPECT_EQ(flow.status(), flw::FlowStatus::IDLE);
-  {
-    EpochSingleIncrementGuard node_guard(node.getValue());
-    EpochSingleIncrementGuard source1_guard(source1.getValue());
-    EpochSingleIncrementGuard source2_guard(source2.getValue());
-
-    source1.update(source1_val);
-    source2.update(source2_val);
-    flow.update();
-  }
-  EXPECT_EQ(flow.status(), flw::FlowStatus::IDLE);
-  EXPECT_EQ(flw::ValueExtractor::impl().get(node.getValue()),
-            source1_val + source2_val);
+  source.update("Hello");
+  ASSERT_EQ(flow.status(), flw::FlowStatus::UPDATE_NOT_REQUIRED);
+  EXPECT_EQ(at(0).value, "Hello");
+  EXPECT_EQ(at(0).epoch, 1);
 }
 
-TEST(Flow, two_source_one_node_incomplete_update) {
-  flw::Flow flow;
+TEST_F(UpdateTest, one_source_one_node_update_deferred) {
+  auto source = flow.makeSource<std::string>("Hello");
 
-  auto source1 = flow.makeSource<std::string>();
-  auto source2 = flow.makeSource<std::string>();
+  flow.setOnNewNodePolicy(flw::HandlerMaker::OnNewNodePolicy::DEFERRED_UPDATE);
+  auto node = this->makeNode<false>(source);
 
-  auto node = flow.makeNode<std::string, std::string, std::string>(
-      predicate_binary, "node", source1, source2);
+  ASSERT_EQ(flow.status(), flw::FlowStatus::UPDATE_REQUIRED);
 
-  const std::string source1_val = "Hello";
-  EXPECT_EQ(flow.status(), flw::FlowStatus::IDLE);
-  {
-    EpochUnchangedGuard node_guard(node.getValue());
-    EpochSingleIncrementGuard source1_guard(source1.getValue());
-    EpochUnchangedGuard source2_guard(source2.getValue());
-
-    source1.update(source1_val);
-    flow.update();
-  }
-  EXPECT_EQ(flow.status(), flw::FlowStatus::IDLE);
-  EXPECT_EQ(node.getValue().status(), flw::ValueStatus::UNSET);
+  flow.update();
+  ASSERT_EQ(flow.status(), flw::FlowStatus::UPDATE_NOT_REQUIRED);
+  EXPECT_EQ(at(0).value, "Hello");
+  EXPECT_EQ(at(0).epoch, 1);
 }
 
-TEST(Flow, two_source_two_node_disjoint_update) {
-  flw::Flow flow;
+TEST_F(UpdateTest, two_source_one_node_update) {
+  auto source1 = flow.makeSource<std::string>("Hello");
+  auto source2 = flow.makeSource<std::string>("World");
 
-  auto source1 = flow.makeSource<std::string>();
-  auto source2 = flow.makeSource<std::string>();
+  auto node = this->makeNode<false>(source1, source2);
 
-  auto node1 = flow.makeNode<std::string, std::string>(predicate_unary, "node1",
-                                                       source1);
-  auto node2 = flow.makeNode<std::string, std::string>(predicate_unary, "node2",
-                                                       source2);
+  ASSERT_EQ(flow.status(), flw::FlowStatus::UPDATE_NOT_REQUIRED);
+  EXPECT_EQ(at(0).value, "HelloWorld");
+  EXPECT_EQ(at(0).epoch, 1);
 
-  const std::string source1_val = "Hello";
-  EXPECT_EQ(flow.status(), flw::FlowStatus::IDLE);
   {
-    EpochSingleIncrementGuard node1_guard(node1.getValue());
-    EpochSingleIncrementGuard source1_guard(source1.getValue());
+    SCOPED_TRACE("Update source 1");
 
-    EpochUnchangedGuard node2_guard(node2.getValue());
-    EpochUnchangedGuard source2_guard(source2.getValue());
+    source1.update("Ciao");
+    ASSERT_EQ(flow.status(), flw::FlowStatus::UPDATE_REQUIRED);
 
-    source1.update(source1_val);
     flow.update();
+    ASSERT_EQ(flow.status(), flw::FlowStatus::UPDATE_NOT_REQUIRED);
+    EXPECT_EQ(at(0).value, "CiaoWorld");
+    EXPECT_EQ(at(0).epoch, 2);
   }
-  EXPECT_EQ(flow.status(), flw::FlowStatus::IDLE);
-  EXPECT_EQ(flw::ValueExtractor::impl().get(node1.getValue()), source1_val);
-  EXPECT_EQ(node2.getValue().status(), flw::ValueStatus::UNSET);
 
-  const std::string source2_val = "World";
-  EXPECT_EQ(flow.status(), flw::FlowStatus::IDLE);
   {
-    EpochUnchangedGuard node1_guard(node1.getValue());
-    EpochUnchangedGuard source1_guard(source1.getValue());
+    SCOPED_TRACE("Update source 2");
 
-    EpochSingleIncrementGuard node2_guard(node2.getValue());
-    EpochSingleIncrementGuard source2_guard(source2.getValue());
+    source2.update("Mondo");
+    ASSERT_EQ(flow.status(), flw::FlowStatus::UPDATE_REQUIRED);
 
-    source2.update(source2_val);
     flow.update();
+    ASSERT_EQ(flow.status(), flw::FlowStatus::UPDATE_NOT_REQUIRED);
+    EXPECT_EQ(at(0).value, "CiaoMondo");
+    EXPECT_EQ(at(0).epoch, 3);
   }
-  EXPECT_EQ(flow.status(), flw::FlowStatus::IDLE);
-  EXPECT_EQ(flw::ValueExtractor::impl().get(node1.getValue()), source1_val);
-  EXPECT_EQ(flw::ValueExtractor::impl().get(node2.getValue()), source2_val);
 }
 
-TEST(Flow, two_source_two_node_joint_update) {
-  flw::Flow flow;
+TEST_F(UpdateTest, two_source_one_node_update_not_needed_as_same_val) {
+  auto source1 = flow.makeSource<std::string>("Hello");
+  auto source2 = flow.makeSource<std::string>("World");
 
-  auto source1 = flow.makeSource<std::string>();
-  auto source2 = flow.makeSource<std::string>();
+  auto node = this->makeNode<false>(source1, source2);
 
-  auto node1 = flow.makeNode<std::string, std::string, std::string>(
-      predicate_binary, "node1", source1, source2);
-  auto node2 = flow.makeNode<std::string, std::string, std::string>(
-      predicate_binary, "node2", source1, source2);
+  source1.update("Hello");
+  ASSERT_EQ(flow.status(), flw::FlowStatus::UPDATE_NOT_REQUIRED);
+  EXPECT_EQ(at(0).value, "HelloWorld");
+  EXPECT_EQ(at(0).epoch, 1);
 
-  const std::string source1_val = "Hello";
-  const std::string source2_val = "World";
-  EXPECT_EQ(flow.status(), flw::FlowStatus::IDLE);
-  {
-    EpochSingleIncrementGuard node1_guard(node1.getValue());
-    EpochSingleIncrementGuard source1_guard(source1.getValue());
-
-    EpochSingleIncrementGuard node2_guard(node2.getValue());
-    EpochSingleIncrementGuard source2_guard(source2.getValue());
-
-    source1.update(source1_val);
-    source2.update(source2_val);
-    flow.update();
-  }
-  EXPECT_EQ(flow.status(), flw::FlowStatus::IDLE);
-  EXPECT_EQ(flw::ValueExtractor::impl().get(node1.getValue()),
-            source1_val + source2_val);
-  EXPECT_EQ(flw::ValueExtractor::impl().get(node2.getValue()),
-            source1_val + source2_val);
+  source2.update("World");
+  ASSERT_EQ(flow.status(), flw::FlowStatus::UPDATE_NOT_REQUIRED);
+  EXPECT_EQ(at(0).value, "HelloWorld");
+  EXPECT_EQ(at(0).epoch, 1);
 }
 
-TEST(Flow, two_source_two_node_and_one_node_update) {
-  flw::Flow flow;
+TEST_F(UpdateTest, two_source_two_node_joint_update) {
+  auto source1 = flow.makeSource<std::string>("Hello");
+  auto source2 = flow.makeSource<std::string>("World");
 
-  auto source1 = flow.makeSource<std::string>();
-  auto source2 = flow.makeSource<std::string>();
+  auto node1 = this->makeNode<false>(source1, source2);
+  auto node2 = this->makeNode<false>(source1, source2);
 
-  auto node1 = flow.makeNode<std::string, std::string>(predicate_unary,
-                                                       std::nullopt, source1);
-  auto node2 = flow.makeNode<std::string, std::string>(predicate_unary,
-                                                       std::nullopt, source2);
-
-  auto node3 = flow.makeNode<std::string, std::string, std::string>(
-      predicate_binary, std::nullopt, node1, node2);
-
-  const std::string source1_val = "Hello";
-  const std::string source2_val = "World";
-  EXPECT_EQ(flow.status(), flw::FlowStatus::IDLE);
-  {
-    EpochSingleIncrementGuard node1_guard(node1.getValue());
-    EpochSingleIncrementGuard source1_guard(source1.getValue());
-
-    EpochSingleIncrementGuard node2_guard(node2.getValue());
-    EpochSingleIncrementGuard source2_guard(source2.getValue());
-
-    EpochSingleIncrementGuard node3_guard(node3.getValue());
-
-    source1.update(source1_val);
-    source2.update(source2_val);
-    flow.update();
+  ASSERT_EQ(flow.status(), flw::FlowStatus::UPDATE_NOT_REQUIRED);
+  for (std::size_t k = 0; k < 2; ++k) {
+    EXPECT_EQ(at(k).value, "HelloWorld");
+    EXPECT_EQ(at(k).epoch, 1);
   }
-  EXPECT_EQ(flow.status(), flw::FlowStatus::IDLE);
-  EXPECT_EQ(flw::ValueExtractor::impl().get(node1.getValue()), source1_val);
-  EXPECT_EQ(flw::ValueExtractor::impl().get(node2.getValue()), source2_val);
-  EXPECT_EQ(flw::ValueExtractor::impl().get(node3.getValue()),
-            source1_val + source2_val);
 }
 
-namespace {
-class ExceptionTest : public flw::Error {
-public:
-  ExceptionTest() : flw::Error{""} {}
-};
+TEST_F(UpdateTest, two_source_two_node_and_one_node_update) {
+  auto source1 = flow.makeSource<std::string>("Hello");
+  auto source2 = flow.makeSource<std::string>("World");
 
-std::string predicate_with_exception(const std::string &e) {
-  throw ExceptionTest{};
-}
-} // namespace
+  auto node1 = this->makeNode<false>(source1, source2);
+  auto node2 = this->makeNode<false>(source1, source2);
 
-TEST(Flow, exception_in_update_fork) {
-  flw::Flow flow;
+  auto node3 = this->makeNode<false>(node1, node2);
 
-  auto source = flow.makeSource<std::string>();
-
-  auto node_1_val =
-      std::make_unique<flw::ValueTypedWithErrors<std::string, ExceptionTest>>();
-  auto node_1 = flow.makeNodeWithMonitoredException<std::string, std::string>(
-      predicate_with_exception, std::move(node_1_val), std::nullopt, source);
-
-  auto node_2_1 = flow.makeNode<std::string, std::string>(predicate_unary,
-                                                          std::nullopt, node_1);
-  auto node_2_2 = flow.makeNode<std::string, std::string>(predicate_unary,
-                                                          std::nullopt, node_1);
-
-  EXPECT_EQ(flow.status(), flw::FlowStatus::IDLE);
-  {
-    EpochSingleIncrementGuard source_guard(source.getValue());
-    EpochSingleIncrementGuard node_1_guard(node_1.getValue());
-    EpochUnchangedGuard node_2_1_guard(node_2_1.getValue());
-    EpochUnchangedGuard node_2_2_guard(node_2_2.getValue());
-
-    source.update("");
-    flow.update();
-  }
-  EXPECT_EQ(flow.status(), flw::FlowStatus::IDLE);
-  EXPECT_THROW(node_1.getValue().reThrow(), ExceptionTest);
-  EXPECT_EQ(node_2_1.getValue().status(), flw::ValueStatus::UNSET);
-  EXPECT_EQ(node_2_2.getValue().status(), flw::ValueStatus::UNSET);
+  ASSERT_EQ(flow.status(), flw::FlowStatus::UPDATE_NOT_REQUIRED);
+  EXPECT_EQ(at(0).value, "HelloWorld");
+  EXPECT_EQ(at(0).epoch, 1);
+  EXPECT_EQ(at(1).value, "HelloWorld");
+  EXPECT_EQ(at(1).epoch, 1);
+  EXPECT_EQ(at(2).value, "HelloWorldHelloWorld");
+  EXPECT_EQ(at(2).epoch, 1);
 }
 
-TEST(Flow, exception_in_update_join) {
-  flw::Flow flow;
+TEST_F(UpdateTest, one_source_one_node_then_fork_update_with_exception) {
+  auto source = flow.makeSource<std::string>("Hello");
 
-  auto source = flow.makeSource<std::string>();
+  auto node_1 = this->makeNode<true>(source); // first time exception is thrown
 
-  auto node_1_1 = flow.makeNode<std::string, std::string>(
-      predicate_with_exception, std::nullopt, source);
-  auto node_1_2 = flow.makeNode<std::string, std::string>(predicate_unary,
-                                                          std::nullopt, source);
+  auto node_2_1 = this->makeNode<false>(node_1);
+  auto node_2_2 = this->makeNode<false>(node_1);
 
-  auto node_2 = flow.makeNode<std::string, std::string, std::string>(
-      predicate_binary, std::nullopt, node_1_1, node_1_2);
-
-  EXPECT_EQ(flow.status(), flw::FlowStatus::IDLE);
-  {
-    EpochSingleIncrementGuard source_guard(source.getValue());
-    EpochSingleIncrementGuard node_1_1_guard(node_1_1.getValue());
-    EpochSingleIncrementGuard node_1_2_guard(node_1_2.getValue());
-    EpochUnchangedGuard node_2_guard(node_2.getValue());
-
-    source.update("");
-    flow.update();
+  for (auto &[_, epoch] : values) {
+    EXPECT_EQ(at(0).epoch, 0);
   }
-  EXPECT_EQ(flow.status(), flw::FlowStatus::IDLE);
-  EXPECT_THROW(node_1_1.getValue().reThrow(), flw::Error);
-  EXPECT_EQ(flw::ValueExtractor::impl().get(node_1_2.getValue()), "");
-  EXPECT_EQ(node_2.getValue().status(), flw::ValueStatus::UNSET);
+
+  source.update("Helloo");
+  ASSERT_EQ(flow.status(), flw::FlowStatus::UPDATE_REQUIRED);
+
+  flow.update();
+  ASSERT_EQ(flow.status(), flw::FlowStatus::UPDATE_NOT_REQUIRED);
+  for (auto &[val, epoch] : values) {
+    EXPECT_EQ(at(0).value, "Helloo");
+    EXPECT_EQ(at(0).epoch, 1);
+  }
+}
+
+TEST_F(UpdateTest, one_source_then_fork_then_sink_update_with_exception) {
+  auto source = flow.makeSource<std::string>("Hello");
+
+  auto node_1_1 =
+      this->makeNode<true>(source); // first time exception is thrown
+  auto node_1_2 =
+      this->makeNode<false>(source); // first time exception is thrown
+
+  auto node_2 = this->makeNode<false>(node_1_1, node_1_2);
+
+  EXPECT_EQ(at(0).epoch, 0);
+  EXPECT_EQ(at(1).value, "Hello");
+  EXPECT_EQ(at(1).epoch, 1);
+  EXPECT_EQ(at(2).epoch, 0);
+
+  source.update("Helloo");
+
+  flow.update();
+  ASSERT_EQ(flow.status(), flw::FlowStatus::UPDATE_NOT_REQUIRED);
+  EXPECT_EQ(at(0).epoch, 1);
+  EXPECT_EQ(at(0).value, "Helloo");
+  EXPECT_EQ(at(1).epoch, 2);
+  EXPECT_EQ(at(1).value, "Helloo");
+  EXPECT_EQ(at(2).epoch, 1);
+  EXPECT_EQ(at(2).value, "HellooHelloo");
 }

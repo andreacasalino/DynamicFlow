@@ -7,162 +7,106 @@
 
 #include <gtest/gtest.h>
 
-#include "ValueExtractor.h"
-#include <DynamicFlow/Node.hpp>
-
-namespace {
-template <typename T, typename... Deps>
-class TestBind : public ::testing::Test, public flw::Node<T, Deps...> {
-public:
-  TestBind() : flw::Node<T, Deps...>([](const Deps &...) { return T{}; }) {}
-};
-} // namespace
-
-namespace {
-using TestBind_int__int = TestBind<int, int>;
-}
-TEST_F(TestBind_int__int, bind) {
-  flw::ValueTypedWithErrors<int> dep_0;
-
-  this->bind<0>(dep_0);
-  const auto *expected_ptr = this->flw::detail::Dependency<0, int>::dependency_;
-  EXPECT_EQ(&dep_0, expected_ptr);
-}
-
-namespace {
-using TestBind_int__int_string = TestBind<int, int, std::string>;
-}
-TEST_F(TestBind_int__int_string, bind) {
-  flw::ValueTypedWithErrors<int> dep_0;
-  this->bind<0>(dep_0);
-
-  flw::ValueTypedWithErrors<std::string> dep_1;
-  this->bind<1>(dep_1);
-
-  {
-    const auto *expected_ptr =
-        this->flw::detail::Dependency<0, int>::dependency_;
-    EXPECT_EQ(&dep_0, expected_ptr);
-  }
-
-  {
-    const auto *expected_ptr =
-        this->flw::detail::Dependency<1, std::string>::dependency_;
-    EXPECT_EQ(&dep_1, expected_ptr);
-  }
-}
-
-namespace {
-using TestBind_int__int_string_int_string =
-    TestBind<int, int, std::string, int, std::string>;
-}
-TEST_F(TestBind_int__int_string_int_string, bind) {
-  flw::ValueTypedWithErrors<int> dep_0;
-  this->bind<0>(dep_0);
-
-  flw::ValueTypedWithErrors<std::string> dep_1;
-  this->bind<1>(dep_1);
-
-  flw::ValueTypedWithErrors<int> dep_2;
-  this->bind<2>(dep_2);
-
-  flw::ValueTypedWithErrors<std::string> dep_3;
-  this->bind<3>(dep_3);
-
-  flw::Values expected_deps_set;
-
-  {
-    const auto *expected_ptr =
-        this->flw::detail::Dependency<0, int>::dependency_;
-    EXPECT_EQ(&dep_0, expected_ptr);
-    expected_deps_set.emplace(expected_ptr);
-  }
-
-  {
-    const auto *expected_ptr =
-        this->flw::detail::Dependency<1, std::string>::dependency_;
-    EXPECT_EQ(&dep_1, expected_ptr);
-    expected_deps_set.emplace(expected_ptr);
-  }
-
-  {
-    const auto *expected_ptr =
-        this->flw::detail::Dependency<2, int>::dependency_;
-    EXPECT_EQ(&dep_2, expected_ptr);
-    expected_deps_set.emplace(expected_ptr);
-  }
-
-  {
-    const auto *expected_ptr =
-        this->flw::detail::Dependency<3, std::string>::dependency_;
-    EXPECT_EQ(&dep_3, expected_ptr);
-    expected_deps_set.emplace(expected_ptr);
-  }
-
-  EXPECT_EQ(expected_deps_set, this->dependencies());
-}
+#include <DynamicFlow/Node.hxx>
+#include "Common.h"
 
 #include <sstream>
 
-namespace {
-class ErrorTest : public flw::Error {
-public:
-  ErrorTest() : flw::Error{""} {};
+
+template <typename... As> struct NodeTest : ::testing::Test {
+  using CB = flw::ValueCallBacks<std::string, flw::test::ErrorTest>;
+
+  template <bool Throw> void setUp(As &&...initialValues) {
+    this->setUp_<Throw>(std::forward<As>(initialValues)..., CB{});
+  }
+
+  template <bool Throw, typename onSucess, typename onException>
+  void setUp(As &&...initialValues, onSucess &&succ, onException &&err) {
+    CB cb;
+    cb.addOnValue(std::forward<onSucess>(succ));
+    cb.addOnError<flw::test::ErrorTest>(std::forward<onException>(err));
+    this->setUp_<Throw>(std::forward<As>(initialValues)..., std::move(cb));
+  }
+
+  std::tuple<flw::NodeBasePtr<As>...> sources;
+  std::shared_ptr<flw::Node<std::string, As...>> node;
+
+private:
+  template <std::size_t Index, typename Afront, typename... Arest>
+  void setUpSource_(Afront &&front, Arest &&...rest) {
+    auto &ref = std::get<Index>(sources);
+    ref = std::make_shared<flw::Source<Afront>>(std::forward<Afront>(front));
+    if constexpr (0 < sizeof...(Arest)) {
+      setUpSource_<Index + 1, Arest...>(std::forward<Arest>(rest)...);
+    }
+  }
+
+  template <bool Throw> void setUp_(As &&...initialValues, CB &&cb) {
+    this->setUpSource_<0, As...>(std::forward<As>(initialValues)...);
+    node = flw::Node<std::string, As...>::make(
+        [](const As &...vals) {
+          if constexpr (Throw) {
+            throw flw::test::ErrorTest{""};
+          }
+          return flw::detail::merge<0>(vals...);
+        },
+        sources, std::forward<CB>(cb));
+  }
 };
 
-std::string evaluation_test(const int &i, const std::string &s) {
-  std::stringstream stream;
-  if (0 == i) {
-    throw ErrorTest{};
-  }
-  stream << i << '-' << s;
-  return stream.str();
+struct NodeTest_OneSource : NodeTest<int> {
+  void SetUp() override { this->setUp<false>(int{306}); }
+};
+
+TEST_F(NodeTest_OneSource, update) {
+  node->update();
+  ASSERT_TRUE(node->value()->getValue());
+  EXPECT_EQ(*node->value()->getValue(), "306");
 }
 
-class TestUpdate : public ::testing::Test,
-                   public flw::Node<std::string, int, std::string> {
-public:
-  TestUpdate()
-      : flw::Node<std::string, int, std::string>(
-            evaluation_test,
-            std::make_unique<
-                flw::ValueTypedWithErrors<std::string, ErrorTest>>()) {}
+TEST_F(NodeTest_OneSource, reset) {
+  node->update();
+  node->reset();
+  ASSERT_FALSE(node->value()->getValue());
+}
 
+struct NodeTest_MultipleSources : NodeTest<int, std::string, int> {
   void SetUp() override {
-    this->bind<0>(s0);
-    this->bind<1>(s1);
+    this->setUp<false>(int{306}, "hello world", int{603});
+  }
+};
+
+TEST_F(NodeTest_MultipleSources, update) {
+  node->update();
+  ASSERT_TRUE(node->value()->getValue());
+  EXPECT_EQ(*node->value()->getValue(), "306hello world603");
+}
+
+struct NodeTest_MultipleSources_withCB : NodeTest<int, std::string, int> {
+  template <bool Throw> void doSetUp() {
+    this->setUp<Throw>(
+        int{306}, "hello world", int{603},
+        [this](const std::string &str) { val.emplace<std::string>(str); },
+        [this](const flw::test::ErrorTest &) { val.emplace<flw::test::ErrorTest>(""); });
   }
 
-protected:
-  flw::ValueTypedWithErrors<int> s0;
-  flw::ValueTypedWithErrors<std::string> s1;
+  struct None {};
+  std::variant<None, std::string, flw::test::ErrorTest> val;
 };
-} // namespace
 
-TEST_F(TestUpdate, update_not_ready) {
-  EXPECT_EQ(this->status(), flw::NodeStatus::UPDATE_NOT_POSSIBLE);
-  EXPECT_THROW(this->update(), flw::Error);
-  EXPECT_EQ(this->getValue().status(), flw::ValueStatus::UNSET);
+TEST_F(NodeTest_MultipleSources_withCB, update_with_cb_sucess) {
+  this->doSetUp<false>();
+
+  node->update();
+  ASSERT_TRUE(node->value()->getValue());
+  EXPECT_EQ(*node->value()->getValue(), "306hello world603");
+  ASSERT_TRUE(std::holds_alternative<std::string>(this->val));
 }
 
-TEST_F(TestUpdate, update_possible_leading_to_value) {
-  s0.update([]() { return 1; });
-  s1.update([]() { return "hello"; });
-  EXPECT_EQ(this->status(), flw::NodeStatus::UPDATE_POSSIBLE);
-  this->update();
-  EXPECT_EQ(this->status(), flw::NodeStatus::UPDATE_NOT_REQUIRED);
-  EXPECT_EQ(this->getValue().status(), flw::ValueStatus::VALUE);
-  EXPECT_EQ(flw::ValueExtractor::impl().get(this->getValue()),
-            evaluation_test(flw::ValueExtractor::impl().get(s0),
-                            flw::ValueExtractor::impl().get(s1)));
-}
+TEST_F(NodeTest_MultipleSources_withCB, update_with_cb_throw) {
+  this->doSetUp<true>();
 
-TEST_F(TestUpdate, update_possible_leading_to_exception) {
-  s0.update([]() { return 0; });
-  s1.update([]() { return "hello"; });
-  EXPECT_EQ(this->status(), flw::NodeStatus::UPDATE_POSSIBLE);
-  this->update();
-  EXPECT_EQ(this->status(), flw::NodeStatus::UPDATE_NOT_REQUIRED);
-  EXPECT_EQ(this->getValue().status(), flw::ValueStatus::EXCEPTION);
-  EXPECT_THROW(this->getValue().reThrow(), ErrorTest);
+  node->update();
+  ASSERT_FALSE(node->value()->getValue());
+  ASSERT_TRUE(std::holds_alternative<flw::test::ErrorTest>(this->val));
 }

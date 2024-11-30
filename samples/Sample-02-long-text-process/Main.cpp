@@ -2,8 +2,8 @@
 #include <map>
 #include <vector>
 
-#include <DynamicFlow/Network.h>
-#include <DynamicFlow/NetworkIO.h>
+#include <DynamicFlow/Network.hxx>
+#include <DynamicFlow/NetworkSerialization.h>
 
 #include <RunScript.h>
 #include <TextIO.h>
@@ -17,17 +17,24 @@ static const std::string SECOND_TEXT = "Novel";
 int main() {
   // build the flow
   flw::Flow flow;
+  flow.setOnNewNodePolicy(flw::HandlerMaker::OnNewNodePolicy::DEFERRED_UPDATE);
   build_network(flow);
 
   // take a snapshot of the network and export it as a .dot file
-  flw::to_dot("Flow-Sample-02.dot", flow.getSnapshot(true));
+  flw::Converter<flw::Serialization::DOT>::toFile(
+      flw::sample::LogDir::get() / "Flow-Sample-02.dot", flow.snapshot());
   // use python graphviz to render exported .dot file
-  flw::sample::runShowGraph("Flow-Sample-02.dot");
+  flw::sample::RunScript::runDefaultScript("Flow-Sample-02.dot");
 
   auto fileNameSource = flow.findSource<std::string>("fileName");
 
   // process the first text
   fileNameSource.update(FIRST_TEXT);
+  flow.update();
+
+  // now a non existing file ... a call back on the FileNotFound exception was
+  // registered and should be printed
+  fileNameSource.update("InexistentFile");
   flow.update();
 
   // process the second text
@@ -38,17 +45,24 @@ int main() {
 }
 
 void append_analysis_nodes(flw::Flow &flow) {
-  auto fileName = flow.makeSource<std::string>("fileName");
+  auto fileName = flow.makeSource<std::string>("", "fileName");
 
-  auto content = flow.makeNode<std::list<std::string>, std::string>(
+  auto content = flow.makeNodeWithErrorsCB<std::list<std::string>, std::string>(
       [](const std::string &file_name) {
         return flw::sample::importText(file_name);
       },
-      "content", fileName);
+      fileName,
+      flw::ValueCallBacks<std::list<std::string>, flw::sample::FileNotFound>{}
+          .addOnError<flw::sample::FileNotFound>(
+              [](const flw::sample::FileNotFound &e) {
+                std::cout << e.what() << std::endl;
+              })
+          .extract(),
+      "content");
 
   auto linesCounter = flow.makeNode<std::size_t, std::list<std::string>>(
       [](const std::list<std::string> &content) { return content.size(); },
-      "lines-counter", content);
+      content, "lines-counter");
 
   auto spacesCounter = flow.makeNode<std::size_t, std::list<std::string>>(
       [](const std::list<std::string> &content) {
@@ -58,7 +72,7 @@ void append_analysis_nodes(flw::Flow &flow) {
         }
         return result;
       },
-      "spaces-counter", content);
+      content, "spaces-counter");
 
   auto wordsByLine = flow.makeNode<std::vector<std::list<std::string>>,
                                    std::list<std::string>>(
@@ -70,7 +84,7 @@ void append_analysis_nodes(flw::Flow &flow) {
         }
         return result;
       },
-      "words-by-lines", content);
+      content, "words-by-lines");
 
   auto wordsFrequencies = flow.makeNode<std::map<std::string, std::size_t>,
                                         std::vector<std::list<std::string>>>(
@@ -88,7 +102,7 @@ void append_analysis_nodes(flw::Flow &flow) {
         }
         return result;
       },
-      "words-frequencies", wordsByLine);
+      wordsByLine, "words-frequencies");
 
   auto wordsCounter =
       flow.makeNode<std::size_t, std::map<std::string, std::size_t>>(
@@ -100,7 +114,7 @@ void append_analysis_nodes(flw::Flow &flow) {
             }
             return result;
           },
-          "words-counter", wordsFrequencies);
+          wordsFrequencies, "words-counter");
 }
 
 void append_exporter_node(flw::Flow &flow) {
@@ -111,47 +125,39 @@ void append_exporter_node(flw::Flow &flow) {
   auto wordsFrequencies =
       flow.findNode<std::map<std::string, std::size_t>>("words-frequencies");
 
-  auto export_was_done =
-      flow.makeNode<bool, std::string, std::size_t, std::size_t, std::size_t,
-                    std::map<std::string, std::size_t>>(
-          [](const std::string &fileName, const std::size_t &lines,
-             const std::size_t &spaces, const std::size_t &words,
-             const std::map<std::string, std::size_t> &frequencies) {
-            std::string outputFile;
-            {
-              std::ostringstream stream;
-              stream << fileName << "_results.log";
-              outputFile = stream.str();
-            }
+  flow.makeNode<std::filesystem::path, std::string, std::size_t, std::size_t,
+                std::size_t, std::map<std::string, std::size_t>>(
+      [](const std::string &fileName, const std::size_t &lines,
+         const std::size_t &spaces, const std::size_t &words,
+         const std::map<std::string, std::size_t> &frequencies) {
+        std::string outputFile = fileName + "_results.log";
 
-            auto stream = flw::sample::make_out_stream(outputFile);
+        auto stream = flw::sample::make_out_stream(outputFile);
 
-            std::cout << "Processing: " << fileName;
+        *stream.get() << fileName << "  analysis" << std::endl;
 
-            *stream.get() << fileName << "  analysis" << std::endl;
+        *stream.get() << "<<<------------------>>>" << std::endl;
 
-            *stream.get() << "<<<------------------>>>" << std::endl;
+        *stream.get() << "lines: " << lines << std::endl;
 
-            *stream.get() << "lines: " << lines << std::endl;
+        *stream.get() << "spaces: " << spaces << std::endl;
 
-            *stream.get() << "spaces: " << spaces << std::endl;
+        *stream.get() << "words: " << words << std::endl;
 
-            *stream.get() << "words: " << words << std::endl;
+        *stream.get() << "<<<------------------>>>" << std::endl;
 
-            *stream.get() << "<<<------------------>>>" << std::endl;
+        *stream.get() << "words frequencies: " << std::endl;
+        for (auto it = frequencies.begin(); it != frequencies.end(); ++it) {
+          *stream.get() << it->first << "  :  " << it->second << std::endl;
+        }
 
-            *stream.get() << "words frequencies: " << std::endl;
-            for (auto it = frequencies.begin(); it != frequencies.end(); ++it) {
-              *stream.get() << it->first << "  :  " << it->second << std::endl;
-            }
-
-            std::cout << " done, results written in " << outputFile
-                      << std::endl;
-
-            return true;
-          },
-          "export-results", fileName, linesCounter, spacesCounter, wordsCounter,
-          wordsFrequencies);
+        return outputFile;
+      },
+      fileName, linesCounter, spacesCounter, wordsCounter, wordsFrequencies, "",
+      [](const std::filesystem::path &outputFile) {
+        std::cout << " done, results written in "
+                  << std::filesystem::current_path() / outputFile << std::endl;
+      });
 }
 
 void build_network(flw::Flow &flow) {

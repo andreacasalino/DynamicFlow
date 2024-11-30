@@ -30,8 +30,6 @@ class Polygon : private detail::PointsStorer,
                 public flx::shape::PointCloud<Points::const_iterator> {
 public:
   Polygon(float ray, std::size_t vertices);
-  Polygon(const Polygon &o);
-  Polygon(Polygon &&o);
 
   std::vector<Point2D> getPoints() const;
 

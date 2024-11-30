@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include <DynamicFlow/Network.h>
-#include <DynamicFlow/NetworkIO.h>
+#include <DynamicFlow/Network.hxx>
+#include <DynamicFlow/NetworkSerialization.h>
 
 #include "CollisionDetectionFlow.h"
 #include <RunScript.h>
@@ -20,12 +20,13 @@ int main() {
       flow_handler.addPolygon(flw::sample::Polygon{1.f, 4}, "square");
   auto &&[circle_orientation, circle_pos] =
       flow_handler.addPolygon(flw::sample::Polygon{1.f, 30}, "almost_circle");
-  flow_handler.finalizeFlowCreation("Scenario");
+  flow_handler.finalizeFlowCreation();
 
   // take a snapshot of the network and export it as a .dot file
-  flw::to_dot("Flow-Sample-04.dot", flow.getSnapshot(false));
+  flw::Converter<flw::Serialization::DOT>::toFile(
+      flw::sample::LogDir::get() / "Flow-Sample-04.dot", flow.snapshot());
   // use python graphviz to render exported .dot file
-  flw::sample::runShowGraph("Flow-Sample-04.dot");
+  flw::sample::RunScript::runDefaultScript("Flow-Sample-04.dot");
 
   // sets multiple threads for the flow update
   flow.setThreads(3);
@@ -40,7 +41,9 @@ int main() {
   // recompute proximity queries
   flow.update();
   // show results
-  flw::sample::runPython(SHOW_RESULTS_PYTHON, "--file", "Scenario_1.json");
+  flw::sample::RunScript::runScript(
+      std::filesystem::path{SCRIPT_FOLDER} / "ShowResults.py", "file",
+      flw::sample::LogDir::get() / "Scenario_1.json");
 
   //////////////////////////////////////////////////////////////
   // second scenario -> a pair in collision the other no
@@ -52,7 +55,9 @@ int main() {
   // polygon were moved
   flow.update();
   // show results
-  flw::sample::runPython(SHOW_RESULTS_PYTHON, "--file", "Scenario_2.json");
+  flw::sample::RunScript::runScript(
+      std::filesystem::path{SCRIPT_FOLDER} / "ShowResults.py", "file",
+      flw::sample::LogDir::get() / "Scenario_2.json");
 
   return EXIT_SUCCESS;
 }

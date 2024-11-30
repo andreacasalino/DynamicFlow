@@ -1,30 +1,28 @@
 #include "CollisionDetectionFlow.h"
 #include "ResultsAccumulator.h"
 
+#include <RunScript.h>
+
 #include <algorithm>
 #include <fstream>
 #include <math.h>
+#include <optional>
 
 namespace flw::sample {
 FlowHandler::PolygonHandler FlowHandler::addPolygon(Polygon &&polygon,
                                                     const std::string &name) {
   {
-    auto it = std::find_if(polygons_.begin(), polygons_.end(),
-                           [&name](const Polygon_ &element) {
-                             return name == element.shape.label().value();
-                           });
-    if (it != polygons_.end()) {
-      throw Error{"A polygon named ", name, " is already part of the network"};
+    if (table_.contains(name)) {
+      throw Error::make<0>("A polygon named ", name,
+                           " is already part of the network");
     }
   }
 
-  auto angle = flow.makeSource<float>(name + "-angle");
-  angle.update(0.f);
-  auto center = flow.makeSource<Point2D>(name + "-center");
-  center.update(Point2D{0.f, 0.f});
+  auto angle = flow.makeSource<float>(0, name + "-angle");
+  auto center = flow.makeSource<Point2D>(Point2D{0, 0}, name + "-center");
 
-  auto polygon_source = flow.makeSource<Polygon>(name);
-  polygon_source.update(std::forward<Polygon>(polygon));
+  auto polygon_source =
+      flow.makeSource<Polygon>(std::forward<Polygon>(polygon), name);
 
   auto polygon_transformation =
       flow.makeNode<flx::shape::Transformation, float, Point2D>(
@@ -33,7 +31,7 @@ FlowHandler::PolygonHandler FlowHandler::addPolygon(Polygon &&polygon,
                 hull::Coordinate{center[0], center[1]},
                 flx::shape::RotationXYZ{0, 0, angle}};
           },
-          name + "-roto-traslation", angle, center);
+          angle, center, name + "-roto-traslation");
 
   auto polygon_with_transformation =
       flow.makeNode<flx::shape::TransformDecorator, Polygon,
@@ -42,76 +40,73 @@ FlowHandler::PolygonHandler FlowHandler::addPolygon(Polygon &&polygon,
             return flx::shape::TransformDecorator{
                 std::make_unique<Polygon>(polygon), trsf};
           },
-          name + "-transformed", polygon_source, polygon_transformation);
+          polygon_source, polygon_transformation, name + "-transformed");
 
-  polygons_.emplace_back(Polygon_{polygon_source, polygon_with_transformation});
-
+  polygons_.emplace_front(
+      PolygonWithPosition{name, polygon_source, polygon_with_transformation});
+  table_.emplace(polygons_.front().label.data(), polygons_.begin());
   return PolygonHandler{angle, center};
 }
 
 namespace {
-static std::size_t PRINT_COUNTER = 0;
-
-std::string make_file_name(const std::string &fileName) {
-  std::ostringstream result;
-  result << fileName << '_' << ++PRINT_COUNTER << ".json";
-  return result.str();
-}
-
-void print(const std::string &fileName, const nlohmann::json &subject) {
-  const auto fileNameWithCounter = make_file_name(fileName);
-  std::ofstream stream(fileNameWithCounter);
+void print(const nlohmann::json &subject) {
+  static std::size_t PRINT_COUNTER = 0;
+  std::ostringstream filename_complete;
+  filename_complete << "Scenario" << '_' << ++PRINT_COUNTER << ".json";
+  std::filesystem::path path_tot = LogDir::get() / filename_complete.str();
+  std::ofstream stream(path_tot);
   if (!stream.is_open()) {
-    std::ostringstream error;
-    error << fileName << " is an invalid fileName";
-    throw std::runtime_error{error.str()};
+    throw Error::make<' '>(path_tot, ": invalid log path");
   }
   stream << subject.dump();
 }
 } // namespace
 
-void FlowHandler::finalizeFlowCreation(const std::string &outputFileName) {
+void FlowHandler::finalizeFlowCreation() {
   if (polygons_.empty()) {
     throw Error{"At least one polygon should be provided"};
   }
 
   struct Check {
-    NodeHandler<flx::QueryResult> query;
-    SourceHandler<Polygon> source_a;
-    SourceHandler<Polygon> source_b;
+    Handler<flx::QueryResult> query;
+    std::string name_a;
+    HandlerSource<Polygon> source_a;
+    std::string name_b;
+    HandlerSource<Polygon> source_b;
   };
-  std::list<Check> checks;
+  std::vector<Check> checks;
   for (auto a = polygons_.begin(); a != polygons_.end(); ++a) {
     auto b = a;
     ++b;
     for (; b != polygons_.end(); ++b) {
       std::ostringstream label;
-      label << a->shape.label().value() << "-vs-" << b->shape.label().value()
-            << "-gjk-result";
+      label << a->label << "-vs-" << b->label << "-gjk-result";
       auto gjk_result =
           flow.makeNode<flx::QueryResult, flx::shape::TransformDecorator,
                         flx::shape::TransformDecorator>(
-              flx::get_closest_points_or_penetration_info, label.str(),
-              a->decorator, b->decorator);
-      checks.emplace_back(Check{gjk_result, a->shape, b->shape});
+              flx::get_closest_points_or_penetration_info, a->decorator,
+              b->decorator, label.str());
+      checks.emplace_back(
+          Check{gjk_result, a->label, a->shape, b->label, b->shape});
     }
   }
 
-  using Handler = NodeHandler<ResultsAccumulator>;
-  std::unique_ptr<Handler> accumulator;
+  using Handler = Handler<ResultsAccumulator>;
+  std::optional<Handler> accumulator;
   for (const auto &polygon : polygons_) {
-    const std::string name = polygon.shape.label().value();
-    if (nullptr == accumulator) {
-      accumulator = std::make_unique<Handler>(
+    const auto &name = polygon.label;
+    if (!accumulator.has_value()) {
+      accumulator.emplace(
           flow.makeNode<ResultsAccumulator, flx::shape::TransformDecorator>(
               [name](const flx::shape::TransformDecorator &res) {
                 ResultsAccumulator result;
                 result.add(name, res);
                 return result;
               },
-              "JSON-" + name, polygon.decorator));
+              polygon.decorator, "JSON-" + name));
     } else {
-      accumulator = std::make_unique<Handler>(
+      auto &prev = accumulator.value();
+      accumulator.emplace(
           flow.makeNode<ResultsAccumulator, flx::shape::TransformDecorator,
                         ResultsAccumulator>(
               [name](const flx::shape::TransformDecorator &res,
@@ -120,28 +115,31 @@ void FlowHandler::finalizeFlowCreation(const std::string &outputFileName) {
                 result.add(name, res);
                 return result;
               },
-              "JSON-" + name, polygon.decorator, *accumulator));
+              polygon.decorator, prev, "JSON-" + name));
     }
   }
   for (const auto &check : checks) {
-    const auto name_a = check.source_a.label().value();
-    const auto name_b = check.source_b.label().value();
+    const auto &name_a = check.name_a;
+    const auto &name_b = check.name_b;
     std::ostringstream label;
     label << "JSON-" << name_a << "-vs-" << name_b << "-gjk-result";
-    accumulator = std::make_unique<Handler>(
-        flow.makeNode<ResultsAccumulator, flx::QueryResult, ResultsAccumulator>(
+    flw::ValueCallBacks<ResultsAccumulator> cb;
+    if (&checks.back() == &check) {
+      // register dump callback to last result
+      cb.addOnValue(
+          [](const ResultsAccumulator &results) { print(results.dump()); });
+    }
+    auto &prev = accumulator.value();
+    accumulator.emplace(
+        flow.makeNodeWithErrorsCB<ResultsAccumulator, flx::QueryResult,
+                                  ResultsAccumulator>(
             [name_a, name_b](const flx::QueryResult &res,
                              const ResultsAccumulator &prev) {
               ResultsAccumulator result{prev};
               result.add(name_a, name_b, res);
               return result;
             },
-            label.str(), check.query, *accumulator));
+            check.query, prev, std::move(cb), label.str()));
   }
-
-  accumulator->onNewValueCallBack(
-      [out = outputFileName](const ResultsAccumulator &results) {
-        print(out, results.dump());
-      });
 }
 } // namespace flw::sample

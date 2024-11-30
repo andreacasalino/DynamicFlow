@@ -1,10 +1,10 @@
-The samples shows how to build a collision check pipeline. Indeed, a certain number of convex 2D polygons may change position and orientation over the time. The pipeline check each pair of polygons and determine for every pair:
+This sample shows how to build a collision check pipeline. In this context, a certain number of convex 2D polygons are registered. As the shapes moves over time, the pipeline purpose is to check for each pair of polygons:
 
     * the closest pair of points in case they are not in collision
 
     * the penetration depth otherwise
 
-The collision checks are done using [**Flexible-GJK-and-EPA**](https://github.com/andreacasalino/Flexible-GJK-and-EPA), which is an external library automatically fetched for you by **CMake** when configuring this sample. The sources of the network are of course the polygon vertices as well as their positions/orientations.
+The collision checks are done using [**Flexible-GJK-and-EPA**](https://github.com/andreacasalino/Flexible-GJK-and-EPA), which is an external library automatically fetched for you by **CMake** when configuring this sample. The sources of the network are of course the polygon vertices (never changing) as well as their positions/orientations (clearly changing over the time).
 Notice that the number of polygons is parametric and the construction of the entire network is done by `FlowHandler`.
 
 More than one **thread** is used for the network update, as some computations for the pairs of polygons can be done in parallel.

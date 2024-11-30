@@ -7,158 +7,153 @@
 
 #include <gtest/gtest.h>
 
-#include "ValueExtractor.h"
-#include <DynamicFlow/Network.h>
+#include <DynamicFlow/Network.hxx>
 
+#include <algorithm>
 #include <thread>
 
-TEST(Flow, node_creation_while_updating_flow) {
+TEST(ThreadSafetyTest, node_creation_while_updating_flow) {
   flw::Flow flow;
+  flow.setOnNewNodePolicy(flw::HandlerMaker::OnNewNodePolicy::DEFERRED_UPDATE);
 
-  auto source = flow.makeSource<int>("source");
+  auto source = flow.makeSource<int>(0);
   auto node = flow.makeNode<int, int>(
-      [](const int &input) {
+      [](int input) {
         std::this_thread::sleep_for(std::chrono::seconds(2));
         return input;
       },
-      "node", source);
+      source);
 
-  const int val = 2;
+  bool node2_was_updated = false;
 
-  source.update(val);
-  std::atomic_bool spawned = false;
-  std::thread th([&]() {
-    spawned.store(true);
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    flow.makeNode<int, int>([](const int &input) { return input; }, "node2",
-                            node);
-  });
-  while (!spawned) {
+  {
+    SCOPED_TRACE("Adding an extra node while updating the flow");
+
+    std::atomic_bool spawned = false;
+    std::jthread th([&]() {
+      spawned.store(true, std::memory_order_acquire);
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+      flow.makeNode<int, int>(
+          [](int input) { return input; }, node, "",
+          [&node2_was_updated](int) { node2_was_updated = true; });
+    });
+    while (!spawned.load(std::memory_order_acquire)) {
+    }
+    flow.update();
   }
-  flow.update();
-  th.join();
 
-  auto node2 = flow.findNode<int>("node2");
-
-  EXPECT_EQ(flw::ValueExtractor::impl().get(node.getValue()), val);
-  EXPECT_EQ(node2.getValue().status(), flw::ValueStatus::UNSET);
+  ASSERT_FALSE(node2_was_updated);
 
   flow.update();
-  EXPECT_EQ(flw::ValueExtractor::impl().get(node.getValue()), val);
-  EXPECT_EQ(flw::ValueExtractor::impl().get(node2.getValue()), val);
+  ASSERT_TRUE(node2_was_updated);
 }
 
-namespace {
-std::string make_source_name(const std::size_t position) {
-  std::stringstream stream;
-  stream << 'S' << position;
-  return stream.str();
-}
-
-std::string make_node_name(const std::size_t layer,
-                           const std::size_t position) {
-  std::stringstream stream;
-  stream << "L-" << layer << '-' << position;
-  return stream.str();
-}
-
+namespace flw::test {
 struct UnComparable {
   int val = 0;
 
   bool operator==(const UnComparable &) const = delete;
 };
 
-using SourceTest = flw::SourceHandler<UnComparable>;
-using NodeTest = flw::NodeHandler<UnComparable>;
-
-template <std::size_t Layers, std::size_t MilliSecondsWait = 50>
-class FlowTest : public ::testing::Test,
-                 public flw::detail::HandlerFinder,
-                 public flw::detail::HandlerMaker,
-                 public flw::detail::Updater {
+class MultiThreadedUpdateFixture : public ::testing::TestWithParam<std::size_t>,
+                                   public flw::HandlerFinder,
+                                   public flw::HandlerMaker,
+                                   public flw::Updater {
 protected:
-  std::vector<SourceTest> sources;
-  std::vector<std::vector<NodeTest>> nodes;
+  using Source = HandlerSource<UnComparable>;
+  std::vector<Source> sources;
+  std::vector<std::vector<int>> nodes_values;
 
 public:
+  static constexpr std::size_t THREADS =
+      2; // cannot be done with more than 2 threads on the CI but can be changed
+         // to do local tests
+
+  template <typename HandlerT>
+  void makeNextLevel(std::vector<Handler<UnComparable>> &res,
+                     const std::vector<HandlerT> &prev_layer) {
+    std::size_t index_a = nodes_values.size();
+    nodes_values.emplace_back().resize(prev_layer.size() - 1);
+    res.clear();
+    res.reserve(prev_layer.size() - 1);
+    for (std::size_t index_b = 0; index_b < prev_layer.size() - 1; ++index_b) {
+      res.emplace_back(this->makeNode<UnComparable, UnComparable, UnComparable>(
+          [](const UnComparable &in1, const UnComparable &in2) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            return UnComparable{in1.val + in2.val};
+          },
+          prev_layer[index_b], prev_layer.back(), "",
+          [a = index_a, b = index_b, this](const UnComparable &v) {
+            nodes_values[a][b] = v.val;
+          }));
+    }
+  }
+
   void SetUp() override {
-    auto waiter = [](const UnComparable &in1, const UnComparable &in2) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(MilliSecondsWait));
-      return UnComparable{in1.val + in2.val};
-    };
+    std::size_t layers = GetParam();
+    this->setOnNewNodePolicy(OnNewNodePolicy::DEFERRED_UPDATE);
 
-    sources.reserve(Layers + 1);
-    for (std::size_t s = 0; s < (Layers + 1); ++s) {
-      sources.push_back(this->makeSource<UnComparable>(make_source_name(s)));
+    for (std::size_t s = 0; s < (layers + 1); ++s) {
+      sources.push_back(this->makeSource<UnComparable>(UnComparable{1}));
     }
 
-    nodes.reserve(Layers);
     // first layer
-    nodes.emplace_back();
-    nodes.back().reserve(Layers);
-    for (std::size_t n = 0; n < Layers; ++n) {
-      nodes.back().push_back(
-          this->makeNode<UnComparable, UnComparable, UnComparable>(
-              waiter, make_node_name(0, n), sources[n], sources.back()));
-    }
+    std::vector<Handler<UnComparable>> layer;
+    makeNextLevel(layer, sources);
     // other layers
-    for (std::size_t l = 1; l < Layers; ++l) {
-      std::vector<NodeTest> &prev_layer = nodes.back();
-      nodes.emplace_back();
-      nodes.back().reserve(Layers - l);
-      for (std::size_t n = 0; n < Layers - l; ++n) {
-        nodes.back().push_back(
-            this->makeNode<UnComparable, UnComparable, UnComparable>(
-                waiter, make_node_name(l, n), prev_layer[n],
-                prev_layer.back()));
-      }
+    std::vector<Handler<UnComparable>> next;
+    for (std::size_t l = 1; l < layers; ++l) {
+      makeNextLevel(next, layer);
+      std::swap(next, layer);
     }
   }
 
-  void checkValues() {
-    int expected_value = 2;
-    for (std::size_t l = 0; l < Layers; ++l) {
-      for (std::size_t n = 0; n < Layers - l; ++n) {
-        auto node = this->findNode<UnComparable>(make_node_name(l, n));
-        EXPECT_EQ(flw::ValueExtractor::impl().get(node.getValue()).val,
-                  expected_value);
-      }
-      expected_value *= 2;
-    }
+  bool checkValues() const {
+    int expected_val = 2;
+    return std::all_of(nodes_values.begin(), nodes_values.end(),
+                       [&](const std::vector<int> &layer) {
+                         bool res = std::all_of(
+                             layer.begin(), layer.end(),
+                             [&](int val) { return val == expected_val; });
+                         expected_val *= 2;
+                         return res;
+                       });
   }
 
-  std::chrono::milliseconds update(std::size_t threads) {
+  std::chrono::nanoseconds update(std::size_t threads) {
     this->setThreads(threads);
-    for (std::size_t s = 0; s < (Layers + 1); ++s) {
-      auto to_update = this->findSource<UnComparable>(make_source_name(s));
-      to_update.update(1);
-    }
-    auto tic = std::chrono::high_resolution_clock::now();
-    this->flw::detail::Updater::update();
-    std::chrono::milliseconds elapsed =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::high_resolution_clock::now() - tic);
-    this->checkValues();
-    return elapsed;
-  }
 
-  void executeComparison(std::size_t threads) {
-    auto serial_time = this->update(1).count();
-    std::cout << "Serial version: " << serial_time << " [ms]" << std::endl;
-    auto parallel_time = this->update(threads).count();
-    std::cout << "Parallel version with " << threads
-              << " threads: " << parallel_time << " [ms]" << std::endl;
-    EXPECT_GE(serial_time, parallel_time);
-  };
+    for (auto &src : sources) {
+      src.update(UnComparable{1});
+    }
+
+    auto tic = std::chrono::high_resolution_clock::now();
+    this->flw::Updater::update();
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::high_resolution_clock::now() - tic);
+  }
 };
 
-} // namespace
+TEST_P(MultiThreadedUpdateFixture, compare_durations) {
+  auto serial_time = this->update(1);
+  ASSERT_TRUE(checkValues());
+  std::cout << "Serial version: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(
+                   serial_time)
+                   .count()
+            << " [ms]" << std::endl;
 
-using FlowTest5 = FlowTest<5>;
-TEST_F(FlowTest5, layers_5) { executeComparison(2); }
+  auto parallel_time = this->update(THREADS);
+  ASSERT_TRUE(checkValues());
+  std::cout << "Multithreaded version: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(
+                   parallel_time)
+                   .count()
+            << " [ms]" << std::endl;
 
-using FlowTest7 = FlowTest<7>;
-TEST_F(FlowTest7, layers_7) { executeComparison(2); }
+  EXPECT_GE(serial_time, parallel_time);
+}
 
-using FlowTest10 = FlowTest<10>;
-TEST_F(FlowTest10, layers_10) { executeComparison(2); }
+INSTANTIATE_TEST_CASE_P(MultiThreadedUpdateTests, MultiThreadedUpdateFixture,
+                        ::testing::Values(5, 7, 10));
+} // namespace flw::test

@@ -3,217 +3,176 @@
 #include <algorithm>
 #include <map>
 #include <omp.h>
+#include <ranges>
 
 namespace flw {
+FlowSnapshot StructureExporter::snapshot() const {
+  FlowSnapshot res;
+  std::unordered_map<const FlowElement *, std::size_t> mapping;
 
-namespace detail {
-namespace {
-template <typename T>
-void absorb_map_(std::unordered_map<std::string, T> &recipient,
-                 std::unordered_map<std::string, T> &giver) {
-  auto giver_it = giver.begin();
-  while (giver_it != giver.end()) {
-    recipient.emplace(giver_it->first, std::move(giver_it->second));
-    giver_it = giver.erase(giver_it);
+  {
+    std::scoped_lock guard(flow_lock_);
+
+    auto forEachNode = [&](const auto &collection) {
+      for (const auto &element : collection) {
+        std::size_t id = res.size();
+        std::string label;
+        if constexpr (std::is_same_v<const FlowElementPtr &,
+                                     decltype(element)>) {
+          if (auto it = sources_to_labels_.find(element.get());
+              it != sources_to_labels_.end()) {
+            label = it->second;
+          }
+        } else {
+          if (auto it = nodes_to_labels_.find(element.get());
+              it != nodes_to_labels_.end()) {
+            label = it->second;
+          }
+        }
+        auto &&[generation, serialization] = element->serializationInfo();
+        bool has_val = serialization != "null";
+        res.emplace_back(ValueSnapshot{
+            has_val,
+            id,
+            generation,
+            std::move(label),
+            std::move(serialization),
+        });
+        mapping.emplace(element.get(), id);
+      }
+    };
+    forEachNode(sources_);
+    forEachNode(nodes_);
+  }
+
+  auto link = [&](ValueSnapshot &recipient, const FlowElement &el) {
+    for (const auto &dep : el.dependants()) {
+      std::size_t dep_id = mapping.at(dep.get());
+      recipient.dependants.push_back(dep_id);
+    }
+  };
+
+  std::size_t index = 0;
+  for (const auto &src : sources_) {
+    link(res[index++], *src);
+  }
+  for (const auto &src : nodes_) {
+    link(res[index++], *src);
+  }
+
+  return res;
+}
+
+void UpdateRequiredAware::propagateSourceUpdate(const FlowElement &source) {
+  std::unordered_set<FlowElementResettable *> level, next;
+  for (const auto &f : source.dependants()) {
+    level.emplace(f.get());
+  }
+  // BFS to extend the update pending set
+  while (!level.empty()) {
+    updatePending_.insert(level.begin(), level.end());
+    for (auto *n : level) {
+      n->reset();
+    }
+    next.clear();
+    for (auto *prev : level) {
+      for (const auto &f : prev->dependants()) {
+        if (updatePending_.find(f.get()) == updatePending_.end()) {
+          next.emplace(f.get());
+        }
+      }
+    }
+    level = std::move(next);
   }
 }
 
-template <typename T>
-void absorb_list_(std::list<T> &recipient, std::list<T> &giver) {
-  recipient.insert(recipient.end(), giver.begin(), giver.end());
-  giver.clear();
+std::unordered_set<FlowElementResettable *>
+Updater::updateSingle(std::vector<FlowElementResettable *> open) {
+  std::vector<FlowElementResettable *> next;
+  while (!open.empty()) {
+    next.clear();
+    for (auto *n : open) {
+      if (n->updatePossible()) {
+        n->update();
+      } else {
+        next.push_back(n);
+      }
+    }
+    if (next.size() == open.size()) {
+      break;
+    }
+    std::swap(open, next);
+  }
+  return std::unordered_set<FlowElementResettable *>{open.begin(), open.end()};
 }
 
-template <typename T>
-void absorb_set_(std::set<T> &recipient, std::set<T> &giver) {
-  recipient.insert(giver.begin(), giver.end());
-  giver.clear();
-}
-} // namespace
+std::unordered_set<FlowElementResettable *>
+Updater::updateMulti(std::unordered_set<FlowElementResettable *> open_set,
+                     std::size_t threads_to_use) {
+  std::vector<FlowElementResettable *> ready_to_process;
+  std::atomic_bool life{true};
+#pragma omp parallel num_threads(static_cast <int>(threads_to_use))
+  {
+    auto th_id = static_cast<std::size_t>(omp_get_thread_num());
+    auto process = [&]() {
+      for (std::size_t k = th_id; k < ready_to_process.size(); k += threads_to_use) {
+        ready_to_process[k]->update();
+      }
+    };
 
-void FlowBase::absorb(FlowBase &o) {
-  std::scoped_lock lock(flow_mtx_, o.flow_mtx_);
-  // check absorb is possible
-  for (const auto &[name, source] : o.sources_labeled_) {
-    if (this->sources_labeled_.find(name) != this->sources_labeled_.end()) {
-      throw Error{"absorb failed: a source named: ", name, " already exists"};
+    if(th_id == 0) {
+      while(true) {
+        std::size_t open_size_snap = open_set.size();
+        auto ready_rng = open_set | std::views::filter([&open_set](FlowElementResettable* node) {
+          const auto &deps = node->dependencies();
+          return std::all_of(
+            deps.begin(), deps.end(), [&open_set](const FlowElementResettablePtr& d) {
+              return !open_set.contains(d.get());
+            });
+        });
+        ready_to_process = {ready_rng.begin(), ready_rng.end()};
+        for(auto* node : ready_to_process) {
+          open_set.erase(node);
+        }
+        if(open_set.size() == open_size_snap || open_set.size() == open_size_snap) {
+          life.store(false, std::memory_order_acquire);
+          break;
+        }
+#pragma omp barrier
+        process();
+#pragma omp barrier
+      }
+#pragma omp barrier
+    }
+    else {
+      while(true) {
+#pragma omp barrier
+        if(!life.load(std::memory_order_acquire)) {
+          break;          
+        }
+        process();
+#pragma omp barrier
+      }
     }
   }
-  for (const auto &[name, node] : o.nodes_labeled_) {
-    if (this->nodes_labeled_.find(name) != this->nodes_labeled_.end()) {
-      throw Error{"absorb failed: a node named: ", name, " already exists"};
-    }
-  }
-  // ok proceed
-  absorb_map_(this->sources_labeled_, o.sources_labeled_);
-  absorb_map_(this->nodes_labeled_, o.nodes_labeled_);
-  absorb_list_(this->sources_all_, o.sources_all_);
-  absorb_list_(this->nodes_all_, o.nodes_all_);
-  absorb_set_(this->values_all_, o.values_all_);
-}
 
-void Updater::reset() {
-  std::scoped_lock lock(flow_mtx_, update_mtx_);
-  for (auto &source : sources_all_) {
-    source->reset();
-  }
-  for (auto &node : nodes_all_) {
-    node->resetValue();
-  }
-}
-
-void Updater::setThreads(const std::size_t threads) {
-  if (threads == 0) {
-    throw Error{"Number of threads should be at least 1"};
-  }
-  threads_.store(threads);
+  return std::move(open_set);
 }
 
 void Updater::update() {
-  std::lock_guard<std::mutex> update_lock(update_mtx_);
-  status_.store(FlowStatus::UPDATING);
-  const std::size_t threads_to_use = threads_.load();
-
-  std::list<NodeBase *> open;
-  Values closed;
-  {
-    std::lock_guard<std::mutex> lock(flow_mtx_);
-    for (const auto &node : nodes_all_) {
-      open.push_back(node.get());
-    }
-    for (const auto &source : sources_all_) {
-      closed.emplace(source.get());
-    }
+  std::scoped_lock guard(flow_lock_);
+  if (updatePending_.empty()) {
+    return;
   }
 
-  struct ToClose {
-    NodeStatus kind;
-    std::list<NodeBase *>::iterator element;
-  };
-  std::vector<ToClose> to_close;
-  auto close_parallel_for = [&to_close](int th_id, int threads) {
-    for (int k = th_id; k < to_close.size(); k += threads) {
-      auto &element = *to_close[k].element;
-      switch (to_close[k].kind) {
-      case NodeStatus::UPDATE_NOT_POSSIBLE:
-        element->resetValue();
-        break;
-      case NodeStatus::UPDATE_POSSIBLE:
-        element->update();
-        break;
-      case NodeStatus::UPDATE_NOT_REQUIRED:
-        break;
-      }
-    }
-  };
-
-  auto any_deps_open = [&](const flw::NodeBase &subject) {
-    for (const auto *dep : subject.dependencies()) {
-      if (closed.find(dep) == closed.end()) {
-        return true;
-      }
-    }
-    return false;
-  };
-
-#pragma omp parallel num_threads(threads_to_use)
-  {
-    const auto th_id = omp_get_thread_num();
-    const auto omp_threads = omp_get_num_threads();
-    if (0 == th_id) {
-      while (!open.empty()) {
-        to_close.clear();
-        for (auto open_it = open.begin(); open_it != open.end(); ++open_it) {
-          auto *candidate = *open_it;
-          if (any_deps_open(*candidate)) {
-            continue;
-          }
-          const auto status = candidate->status();
-          to_close.push_back(ToClose{status, open_it});
-        }
-#pragma omp barrier
-        close_parallel_for(th_id, omp_threads);
-#pragma omp barrier
-        for (const auto &element : to_close) {
-          closed.emplace((*element.element)->valueUntyped());
-          open.erase(element.element);
-        }
-      }
-      to_close.clear();
-#pragma omp barrier
-    } else {
-      while (true) {
-#pragma omp barrier
-        if (to_close.empty()) {
-          break;
-        }
-        close_parallel_for(th_id, omp_threads);
-#pragma omp barrier
-      }
-    }
+  updating_.store(true, std::memory_order_acquire);
+  std::size_t threads_to_use = threads_.load(std::memory_order_acquire);
+  if (threads_to_use == 1) {
+    updatePending_ = updateSingle(std::vector<FlowElementResettable *>{
+        updatePending_.begin(), updatePending_.end()});
+  } else {
+    updatePending_ = updateMulti(std::move(updatePending_), threads_to_use);
   }
-  status_.store(FlowStatus::IDLE);
+  updating_.store(false, std::memory_order_release);
 }
-
-bool Updater::isUpdateRequired() const {
-  std::scoped_lock lock(flow_mtx_, update_mtx_);
-  for (const auto &node : nodes_all_) {
-    switch (node->status()) {
-    case NodeStatus::UPDATE_NOT_POSSIBLE:
-    case NodeStatus::UPDATE_POSSIBLE:
-      return true;
-    }
-  }
-  return false;
-}
-
-FlowSnapshot StructureExporter::getSnapshot(bool serializeNodeValues) const {
-  struct Info {
-    std::size_t id;
-    std::optional<std::string> label;
-    std::optional<Values> dependencies;
-  };
-
-  std::map<const Value *, Info> meta_map;
-  std::lock_guard<std::mutex> lock(flow_mtx_);
-  std::size_t id = 0;
-  for (const auto &[name, val] : sources_labeled_) {
-    meta_map.emplace(val.get(), Info{id++, name});
-  }
-  for (const auto &val : sources_all_) {
-    if (meta_map.find(val.get()) == meta_map.end()) {
-      meta_map.emplace(val.get(), Info{id++});
-    }
-  }
-  for (const auto &[name, node] : nodes_labeled_) {
-    meta_map.emplace(node->valueUntyped(),
-                     Info{id++, name, node->dependencies()});
-  }
-  for (const auto &node : nodes_all_) {
-    auto *val = node->valueUntyped();
-    if (meta_map.find(val) == meta_map.end()) {
-      meta_map.emplace(val, Info{id++, std::nullopt, node->dependencies()});
-    }
-  }
-
-  FlowSnapshot result;
-  result.reserve(meta_map.size());
-  for (const auto &[val, info] : meta_map) {
-    auto &added = result.emplace_back();
-    added.id = info.id;
-    added.label = std::move(info.label);
-    added.epoch = val->epoch();
-    added.status = val->status();
-    added.value_serialization = serializeNodeValues ? val->toString() : "none";
-
-    if (info.dependencies) {
-      auto &deps = added.dependencies.emplace();
-      for (const auto *dep : info.dependencies.value()) {
-        deps.push_back(meta_map.find(dep)->second.id);
-      }
-    }
-  }
-  return result;
-}
-} // namespace detail
 } // namespace flw

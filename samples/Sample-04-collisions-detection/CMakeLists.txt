@@ -1,4 +1,4 @@
-MAKE_SAMPLE(ON)
+MAKE_SAMPLE()
 
 # external library for collision detection
 message("fetching gjk-epa")
@@ -18,7 +18,3 @@ target_link_libraries(DynamicFlow-Sample-04-collisions-detection PUBLIC
     nlohmann_json::nlohmann_json
 )
 
-target_compile_definitions(DynamicFlow-Sample-04-collisions-detection
-PUBLIC
-    -DSHOW_RESULTS_PYTHON="${CMAKE_CURRENT_SOURCE_DIR}/src/ShowResults.py"
-)

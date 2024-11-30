@@ -56,24 +56,23 @@ def print_patch(ax, vertices, color):
     patch = mpatches.PathPatch(path, facecolor=color, alpha=1.0)
     ax.add_patch(patch)
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--file')
-args = parser.parse_args()
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--file', required=True)
+    args = parser.parse_args()
 
-fileName = args.file
+    to_print = import_json(args.file)
 
-to_print = import_json(fileName)
+    fig, ax = plt.subplots()
+    fig.suptitle(args.file, fontsize=14)
+    for shape_name in to_print['Shapes']:
+        shape = to_print['Shapes'][shape_name]
+        print_patch(ax, shape['vertices'], shape['color'])
+        # TODO print name of polygons close to them in the figure
+    for line in to_print['Lines']:
+        print_line(ax, line['diffA'], line['diffB'])
 
-fig, ax = plt.subplots()
-fig.suptitle(fileName, fontsize=14)
-for shape_name in to_print['Shapes']:
-    shape = to_print['Shapes'][shape_name]
-    print_patch(ax, shape['vertices'], shape['color'])
-    # TODO print name of polygons close to them in the figure
-for line in to_print['Lines']:
-    print_line(ax, line['diffA'], line['diffB'])
+    limits.printCorners(ax)
 
-limits.printCorners(ax)
-
-ax.axis('equal')
-plt.show()
+    ax.axis('equal')
+    plt.show()

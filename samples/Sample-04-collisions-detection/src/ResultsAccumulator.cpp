@@ -7,10 +7,6 @@ ResultsAccumulator::ResultsAccumulator() {
   results_ = std::make_shared<Results>();
 }
 
-ResultsAccumulator::ResultsAccumulator(const ResultsAccumulator &o) {
-  results_ = o.results_;
-}
-
 namespace {
 void to_json(nlohmann::json &recipient, const hull::Coordinate &subject) {
   recipient["x"] = subject.x;
