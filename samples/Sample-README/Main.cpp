@@ -1,47 +1,38 @@
 #include <string>
 
-#include <DynamicFlow/Network.h>
+#include <DynamicFlow/Network.hxx>
 
 int main() {
-  // build a new flow
+  // Build a new empty flow
   flw::Flow flow;
 
-  // define the sources nodes
-  auto source_1 = flow.makeSource<int>("Source-1");
-  auto source_2 = flow.makeSource<std::string>("Source-2");
+  // Define the sources nodes, passing the initial values
+  auto source_1 = flow.makeSource<int>(576, "Source-1");
+  auto source_2 = flow.makeSource<std::string>("Some value", "Source-2");
 
-  // define a node obtained by combining the 2 sources
+  // Define a node combining the 2 sources
+  // The intial value for the node will be computed right after built, as the default policy of the network
+  // is OnNewNodePolicy::IMMEDIATE_UPDATE
   auto node = flow.makeNode<std::string, int, std::string>(
-      // here you pass or define the lambda used to combine the values of the
-      // ancestors, in order to get the new value to store in the node to
-      // create.
+      // here you pass or define the lambda used to processing the values of the ancestors
       [](const int &source_1, const std::string &source_2) {
         // use sources values to get the new node value
         std::string result = source_2 + std::to_string(source_1);
         return result;
       },
-      // label to assing to the node (is actually optional)
-      "Node",
       // the ancestors
-      source_1, source_2);
+      source_1, source_2,
+      // label to assing to the node (is actually optional ... needed if you want to retrieve the node later from the network)
+      "Node", 
+      // we want in this case to also register a call back, triggered every time a new value is computed for the node
+      [](const std::string &new_value) {
+        // do something fancy with new_value ... 
+      });
 
-  // You can attach a callback to the node.
-  // This callback will be automatically called by the network everytime this
-  // node is updated with a new value.
-  node.onNewValueCallBack([](const std::string &new_value) {
-    // do something with new_value.
-    // You will get here every time a new value is computed for this node
-  });
-
-  // every time the value of a generated node is re-computed, the lambda
-  // expression passed when creating that node is invoked.
-  // Clearly, the execution of that expression may lead to an exception throw.
-  // In such cases, no new value is set for the node and the exception throwned
-  // is stored in the node and can be re-throwned later.
-  // Normally, the exception type would be lost as a generic std::exception is
-  // persisted in the node.
-  // To overcome this, you can build the node in a slightly different way, in
-  // order to tell the flow the kind of custom exceptions to preserve.
+  // It may happen that an exception is thrown when executing the labda passed to a node, when trying 
+  // to update the value stored in that node.
+  // You can register a call back for each specific exception type that can be thrown.
+  // In this way, the call back of the exception is given the exception without loosing its type.
   class CustomException1 : public std::runtime_error {
   public:
     CustomException1() : std::runtime_error{"Bla bla"} {};
@@ -50,34 +41,35 @@ int main() {
   public:
     CustomException2() : std::runtime_error{"Bla bla"} {};
   };
-  flow.makeNodeWithMonitoredException<std::string, std::string>(
+  flow.makeNodeWithErrorsCB<std::string, std::string>(
       [](const std::string &source_2) {
         std::string result;
-        // ops ... an exception thrown
+        // ops ... an exception is thrown
         throw CustomException1{};
         return result;
       },
-      std::make_unique<
-          flw::ValueTypedWithErrors<std::string,
-                                    // here you list the exceptions
-                                    // for which you don't want to
-                                    // loose the type
-                                    CustomException1, CustomException2>>(),
-      std::nullopt, source_2);
+      source_2,
+      flw::ValueCallBacks<std::string, CustomException1, CustomException2>{}
+      .addOnValue([](const std::string& val) {
+        // do something with the value
+      })
+      .addOnError<CustomException1>([](const CustomException1& e) {
+        // inspect e and trigger the proper reaction
+      })
+      .addOnError<CustomException2>([](const CustomException2& e) {
+        // inspect e and trigger the proper reaction
+      })
+      .extract());
 
-  // update the sources passing their new values. In case of complex
-  // classes, you can pass the arguments used by one of the constructor.
-  //
-  // this will not automatically update the dependant nodes as this will
-  // actually happen when updating the flow
-  source_1.update(2);
-  source_2.update("hello");
-  // update those nodes in the flow requiring a recomputation
+  // Now is the time to update one of the source (we could update multiple ones or them all if needed).
+  source_2.update("Some other value");
+  // Update those nodes in the flow requiring a recomputation
   flow.update();
 
-  // you can also specify the number of threads to internally use for the update
+  // You can also decide to update the flow, using multiple threads.
+  // This is actually recommended only for very big network.
   flow.setThreads(3);
-  // the next update will be done using 3 threads
+  // 3 threads will be used by the next update as 3 was passed to setThreads(...)
   flow.update();
 
   return EXIT_SUCCESS;

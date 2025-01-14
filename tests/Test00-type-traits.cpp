@@ -9,63 +9,84 @@
 
 #include <DynamicFlow/TypeTraits.h>
 
-#include "CheckCPlusPlus20.h"
-
-namespace {
-class ComparableByOperator {
+namespace flw::test {
+class ComparableByMethod {
 public:
-  ComparableByOperator() = default;
+  ComparableByMethod() = default;
+
+  bool operator==(const ComparableByMethod &) const { return true; }
 };
 
-bool operator==(const ComparableByOperator &, const ComparableByOperator &) {
+class ComparableByFunction {
+public:
+  ComparableByFunction() = default;
+};
+
+bool operator==(const ComparableByFunction &a, const ComparableByFunction &b) {
   return true;
 }
-} // namespace
 
-TEST(TypeTraits, HasComparisonOperator) {
-  CHECK_CPLUSPLUS_20
-
-  EXPECT_TRUE(flw::HasComparisonOperator<int>::value);
-
-  class ComparableByMethod {
-  public:
-    ComparableByMethod() = default;
-
-    bool operator==(const ComparableByMethod &) const { return true; }
-  };
-  EXPECT_TRUE(flw::HasComparisonOperator<ComparableByMethod>::value);
-
-  EXPECT_TRUE(flw::HasComparisonOperator<ComparableByOperator>::value);
-
-  class UnComparable {
-  public:
-    UnComparable() = default;
-  };
-  EXPECT_FALSE(flw::HasComparisonOperator<UnComparable>::value);
-}
-
-namespace {
-class Printable {
+class UnComparable {
 public:
-  Printable() = default;
+  UnComparable() = default;
 };
 
-std::ostream &operator<<(std::ostream &s, const Printable &) {
-  s << "Printable";
+template <typename T> bool hasComparisonOperator() {
+  if constexpr (flw::HasComparisonOperator<T>) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+TEST(TypeTraitsTest, HasComparisonOperator) {
+  EXPECT_TRUE(hasComparisonOperator<int>());
+  EXPECT_TRUE(hasComparisonOperator<ComparableByMethod>());
+  EXPECT_TRUE(hasComparisonOperator<ComparableByFunction>());
+
+  EXPECT_FALSE(hasComparisonOperator<UnComparable>());
+}
+
+class PrintableWithStream {
+public:
+  PrintableWithStream() = default;
+};
+
+std::ostream &operator<<(std::ostream &s, const PrintableWithStream &) {
   return s;
 }
-} // namespace
 
-TEST(TypeTraits, CanBeSerialized) {
-  CHECK_CPLUSPLUS_20
+class UnPrintable {
+public:
+  UnPrintable() = default;
+};
 
-  EXPECT_EQ(flw::to_string(0), "0");
-
-  EXPECT_EQ(flw::to_string(Printable{}), "Printable");
-
-  class UnPrintable {
-  public:
-    UnPrintable() = default;
-  };
-  EXPECT_FALSE(flw::to_string(UnPrintable{}));
+template <typename T> bool hasStreamOperator() {
+  if constexpr (flw::HasStreamOperator<T>) {
+    return true;
+  } else {
+    return false;
+  }
 }
+
+TEST(TypeTraitsTest, HasStreamOperator) {
+  EXPECT_TRUE(hasStreamOperator<int>());
+  EXPECT_TRUE(hasStreamOperator<PrintableWithStream>());
+
+  EXPECT_FALSE(hasStreamOperator<UnPrintable>());
+}
+
+template <typename T> bool canBeStringConvertible() {
+  if constexpr (flw::CanBeStringConvertible<T>) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+TEST(TypeTraitsTest, CanBeStringConvertible) {
+  EXPECT_TRUE(canBeStringConvertible<int>());
+
+  EXPECT_FALSE(canBeStringConvertible<UnPrintable>());
+}
+} // namespace flw::test

@@ -7,153 +7,166 @@
 
 #include <gtest/gtest.h>
 
-#include "CheckCPlusPlus20.h"
-#include "ValueExtractor.h"
-#include <DynamicFlow/Network.h>
+#include <DynamicFlow/Network.hxx>
 
-namespace {
+struct Summer {
+  int operator()(int val) { return val; }
+
+  int operator()(int a, int b) { return a + b; }
+};
+
 class LazynessTest : public ::testing::Test,
-                     public flw::detail::HandlerFinder,
-                     public flw::detail::HandlerMaker,
-                     public flw::detail::Updater {
+                     public flw::HandlerMaker,
+                     public flw::Updater {
 public:
   LazynessTest() = default;
+
+  struct Source {
+    Source(flw::HandlerSource<int> &&s)
+        : source{std::forward<flw::HandlerSource<int>>(s)} {}
+
+    int val = 0;
+    flw::HandlerSource<int> source;
+  };
+  std::vector<Source> sources;
+
+  struct NodeValue {
+    int val;
+    std::size_t epochs = 0;
+  };
+  NodeValue M0_val;
+  NodeValue M1_val;
+  NodeValue D0_val;
+  NodeValue D1_val;
+  NodeValue F0_val;
+
+  template <typename... As>
+  auto makeNode_(NodeValue &rec, const flw::Handler<As> &...deps) {
+    return this->makeNode<int, As...>(
+        [](const As &...vals) {
+          static Summer s;
+          return s(vals...);
+        },
+        deps..., "",
+        [&rec](int val) {
+          rec.val = val;
+          ++rec.epochs;
+        });
+  }
+
+  template <std::size_t Index> void updateSource(int val) {
+    sources[Index].val = val;
+    sources[Index].source.update(val);
+  }
 
   void SetUp() override {
     auto cloner = [](const auto &in) { return in; };
     auto combiner = [](const auto &in1, const auto &in2) { return in1 + in2; };
 
-    auto S0 = this->makeSource<int>("S0");
-    auto S1 = this->makeSource<int>("S1");
-    auto S2 = this->makeSource<int>("S2");
-    auto S3 = this->makeSource<int>("S3");
+    sources.emplace_back(this->makeSource<int>(0));
+    sources.emplace_back(this->makeSource<int>(0));
+    sources.emplace_back(this->makeSource<int>(0));
+    sources.emplace_back(this->makeSource<int>(0));
 
-    auto M0 = this->makeNode<int, int, int>(combiner, "M0", S0, S1);
+    auto M0 =
+        this->makeNode_<int, int>(M0_val, sources[0].source, sources[1].source);
+    auto M1 =
+        this->makeNode_<int, int>(M1_val, sources[2].source, sources[3].source);
 
-    auto M1 = this->makeNode<int, int, int>(combiner, "M1", S2, S3);
+    auto D0 = this->makeNode_<int>(D0_val, M0);
+    auto D1 = this->makeNode_<int, int>(D1_val, M0, M1);
 
-    auto D0 = this->makeNode<int, int>(cloner, "D0", M0);
-
-    auto D1 = this->makeNode<int, int, int>(combiner, "D1", M0, M1);
-
-    auto F0 = this->makeNode<int, int, int>(combiner, "F0", D0, D1);
-
-    S0.update(1);
-    S1.update(1);
-    S2.update(1);
-    S3.update(1);
-    this->update();
+    auto F0 = this->makeNode_<int, int>(F0_val, D0, D1);
 
     this->checkValues();
   }
 
   void checkValues() {
-    auto x =
-        flw::ValueExtractor::impl().get(this->findSource<int>("S0").getValue());
-    auto y =
-        flw::ValueExtractor::impl().get(this->findSource<int>("S1").getValue());
-    auto z =
-        flw::ValueExtractor::impl().get(this->findSource<int>("S2").getValue());
-    auto w =
-        flw::ValueExtractor::impl().get(this->findSource<int>("S3").getValue());
+    EXPECT_EQ(sources[0].val + sources[1].val, M0_val.val);
+    EXPECT_EQ(sources[2].val + sources[3].val, M1_val.val);
 
-    auto M0 = this->findNode<int>("M0");
-    EXPECT_EQ(flw::ValueExtractor::impl().get(M0.getValue()), x + y);
+    EXPECT_EQ(M0_val.val, D0_val.val);
+    EXPECT_EQ(M0_val.val + M1_val.val, D1_val.val);
 
-    auto M1 = this->findNode<int>("M1");
-    EXPECT_EQ(flw::ValueExtractor::impl().get(M1.getValue()), z + w);
-
-    auto D0 = this->findNode<int>("D0");
-    EXPECT_EQ(flw::ValueExtractor::impl().get(D0.getValue()), x + y);
-
-    auto D1 = this->findNode<int>("D1");
-    EXPECT_EQ(flw::ValueExtractor::impl().get(D1.getValue()), x + y + z + w);
-
-    auto F0 = this->findNode<int>("F0");
-    EXPECT_EQ(flw::ValueExtractor::impl().get(F0.getValue()),
-              2 * (x + y) + z + w);
+    EXPECT_EQ(D0_val.val + D1_val.val, F0_val.val);
   }
 };
-} // namespace
 
-TEST_F(LazynessTest, case_0) {
-  CHECK_CPLUSPLUS_20
-
-  auto S0 = this->findSource<int>("S0");
-  S0.update(1);
-  auto S1 = this->findSource<int>("S1");
-  S1.update(1);
+TEST_F(LazynessTest, case_0_same_source_values) {
+  this->updateSource<0>(0);
+  this->updateSource<1>(0);
+  this->updateSource<2>(0);
+  this->updateSource<3>(0);
 
   this->update();
-  this->checkValues();
 
-  // nothing should have been changed as the sources values are the same
-  auto M0 = this->findNode<int>("M0");
-  EXPECT_EQ(M0.getValue().epoch(), 1);
-
-  auto M1 = this->findNode<int>("M1");
-  EXPECT_EQ(M1.getValue().epoch(), 1);
-
-  auto D0 = this->findNode<int>("D0");
-  EXPECT_EQ(D0.getValue().epoch(), 1);
-
-  auto D1 = this->findNode<int>("D1");
-  EXPECT_EQ(D1.getValue().epoch(), 1);
-
-  auto F0 = this->findNode<int>("F0");
-  EXPECT_EQ(F0.getValue().epoch(), 1);
+  // no update expected as the value is still the same
+  EXPECT_EQ(M0_val.epochs, 1);
+  EXPECT_EQ(M1_val.epochs, 1);
+  EXPECT_EQ(D0_val.epochs, 1);
+  EXPECT_EQ(D1_val.epochs, 1);
+  EXPECT_EQ(F0_val.epochs, 1);
 }
 
-TEST_F(LazynessTest, case_1) {
-  CHECK_CPLUSPLUS_20
-
-  auto S0 = this->findSource<int>("S0");
-  S0.update(2);
-  auto S1 = this->findSource<int>("S1");
-  S1.update(2);
+TEST_F(LazynessTest, case_1_0_only_one_of_the_source) {
+  this->updateSource<0>(1);
 
   this->update();
+
   this->checkValues();
 
-  auto M0 = this->findNode<int>("M0");
-  EXPECT_EQ(M0.getValue().epoch(), 2);
+  EXPECT_EQ(M0_val.val, 1);
+  EXPECT_EQ(M0_val.epochs, 2);
+  EXPECT_EQ(M1_val.val, 0);
+  EXPECT_EQ(M1_val.epochs, 1);
 
-  auto M1 = this->findNode<int>("M1");
-  EXPECT_EQ(M1.getValue().epoch(), 1);
+  EXPECT_EQ(D0_val.val, 1);
+  EXPECT_EQ(D0_val.epochs, 2);
+  EXPECT_EQ(D1_val.val, 1);
+  EXPECT_EQ(D1_val.epochs, 2);
 
-  auto D0 = this->findNode<int>("D0");
-  EXPECT_EQ(D0.getValue().epoch(), 2);
-
-  auto D1 = this->findNode<int>("D1");
-  EXPECT_EQ(D1.getValue().epoch(), 2);
-
-  auto F0 = this->findNode<int>("F0");
-  EXPECT_EQ(F0.getValue().epoch(), 2);
+  EXPECT_EQ(F0_val.val, 2);
+  EXPECT_EQ(F0_val.epochs, 2);
 }
 
-TEST_F(LazynessTest, case_2) {
-  CHECK_CPLUSPLUS_20
+TEST_F(LazynessTest, case_1_1_only_one_of_the_source) {
+  this->updateSource<2>(1);
 
-  auto S2 = this->findSource<int>("S2");
-  S2.update(3);
-  auto S3 = this->findSource<int>("S3");
-  S3.update(3);
+  this->update();
+
+  this->checkValues();
+
+  EXPECT_EQ(M0_val.val, 0);
+  EXPECT_EQ(M0_val.epochs, 1);
+  EXPECT_EQ(M1_val.val, 1);
+  EXPECT_EQ(M1_val.epochs, 2);
+
+  EXPECT_EQ(D0_val.val, 0);
+  EXPECT_EQ(D0_val.epochs, 1);
+  EXPECT_EQ(D1_val.val, 1);
+  EXPECT_EQ(D1_val.epochs, 2);
+
+  EXPECT_EQ(F0_val.val, 1);
+  EXPECT_EQ(F0_val.epochs, 2);
+}
+
+TEST_F(LazynessTest, case_2_multiple_sources) {
+  this->updateSource<0>(1);
+  this->updateSource<2>(2);
 
   this->update();
   this->checkValues();
 
-  auto M0 = this->findNode<int>("M0");
-  EXPECT_EQ(M0.getValue().epoch(), 1);
+  EXPECT_EQ(M0_val.val, 1);
+  EXPECT_EQ(M0_val.epochs, 2);
+  EXPECT_EQ(M1_val.val, 2);
+  EXPECT_EQ(M1_val.epochs, 2);
 
-  auto M1 = this->findNode<int>("M1");
-  EXPECT_EQ(M1.getValue().epoch(), 2);
+  EXPECT_EQ(D0_val.val, 1);
+  EXPECT_EQ(D0_val.epochs, 2);
+  EXPECT_EQ(D1_val.val, 3);
+  EXPECT_EQ(D1_val.epochs, 2);
 
-  auto D0 = this->findNode<int>("D0");
-  EXPECT_EQ(D0.getValue().epoch(), 1);
-
-  auto D1 = this->findNode<int>("D1");
-  EXPECT_EQ(D1.getValue().epoch(), 2);
-
-  auto F0 = this->findNode<int>("F0");
-  EXPECT_EQ(F0.getValue().epoch(), 2);
+  EXPECT_EQ(F0_val.val, 4);
+  EXPECT_EQ(F0_val.epochs, 2);
 }

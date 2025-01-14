@@ -4,30 +4,38 @@
 
 #include <Flexible-GJK-and-EPA/shape/TransformDecorator.h>
 
-#include <DynamicFlow/Network.h>
+#include <DynamicFlow/Network.hxx>
 
+#include <filesystem>
 #include <list>
+#include <string_view>
+#include <unordered_map>
 
 namespace flw::sample {
 class FlowHandler {
 public:
   Flow flow;
 
-  FlowHandler() = default;
+  FlowHandler() {
+    flow.setOnNewNodePolicy(HandlerMaker::OnNewNodePolicy::DEFERRED_UPDATE);
+  }
 
   struct PolygonHandler {
-    SourceHandler<float> angle;
-    SourceHandler<Point2D> center;
+    HandlerSource<float> angle;
+    HandlerSource<Point2D> center;
   };
   PolygonHandler addPolygon(Polygon &&polygon, const std::string &name);
 
-  void finalizeFlowCreation(const std::string &outputFileName);
+  void finalizeFlowCreation();
 
 private:
-  struct Polygon_ {
-    SourceHandler<Polygon> shape;
-    NodeHandler<flx::shape::TransformDecorator> decorator;
+  struct PolygonWithPosition {
+    std::string label;
+    HandlerSource<Polygon> shape;
+    Handler<flx::shape::TransformDecorator> decorator;
   };
-  std::list<Polygon_> polygons_;
+  using Container = std::list<PolygonWithPosition>;
+  Container polygons_;
+  std::unordered_map<std::string_view, Container::const_iterator> table_;
 };
 } // namespace flw::sample

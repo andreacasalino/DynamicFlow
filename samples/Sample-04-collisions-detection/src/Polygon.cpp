@@ -40,10 +40,6 @@ hull::Coordinate to_coordinate(const Points::const_iterator &to_convert) {
 Polygon::Polygon(float ray, std::size_t vertices)
     : Polygon{make_vertices(ray, vertices)} {}
 
-Polygon::Polygon(const Polygon &o) : Polygon{o.vertices_} {}
-
-Polygon::Polygon(Polygon &&o) : Polygon{o.vertices_} {}
-
 Polygon::Polygon(std::shared_ptr<const Points> vertices)
     : detail::PointsStorer{vertices},
       flx::shape::PointCloud<Points::const_iterator>{

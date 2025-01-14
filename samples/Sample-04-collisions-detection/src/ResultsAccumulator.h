@@ -14,8 +14,6 @@ class ResultsAccumulator {
 public:
   ResultsAccumulator();
 
-  ResultsAccumulator(const ResultsAccumulator &o);
-
   struct Results {
     std::unordered_map<std::string, nlohmann::json> serialized_polygons;
 

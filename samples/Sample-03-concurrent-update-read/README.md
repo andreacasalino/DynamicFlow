@@ -1,5 +1,8 @@
-A simple network with no particular meaning is built with the purpose to show the thread safety capabilities of **DynamicFlow**.
+A simple network with no particular meaning is built with the purpose to show how to thread-safely interact with **DynamicFlow**.
 
-In essence, the generated flow is continously updated from a thread, while from other ones the status and the content of some node in the flow is continously inspected.
+In essence:
+- one thread continously updated the flow
+- two different threads continously update two distinct sources
+- values of the nodes are monitored and periodically logged to file
 
 Check the comments in the code for further details.

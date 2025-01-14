@@ -7,331 +7,232 @@
 
 #pragma once
 
-#include <DynamicFlow/Node.hpp>
+#include <DynamicFlow/Node.hxx>
 
-#include <list>
+#include <atomic>
+#include <mutex>
+#include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace flw {
-namespace detail {
 class HandlerMaker;
 class HandlerFinder;
-
 class FlowBase;
-} // namespace detail
+class UpdateRequiredAware;
 
-template <typename T> class NodeHandler : public detail::ValueAware<T> {
-  friend class detail::HandlerMaker;
-  friend class detail::HandlerFinder;
+template <typename T> class Handler {
+  friend class HandlerMaker;
+  friend class HandlerFinder;
 
 public:
-  /**
-   * @return the name used to register the node wrapped by this handler
-   */
-  const std::optional<std::string> &label() const { return label_; }
+  Handler(const Handler &) = default;
+  Handler &operator=(const Handler &) = default;
 
-  /**
-   * @brief forward to ValueTyped::onNewValueCallBack(...) of the value wrapped
-   * by this handler.
-   */
-  template <typename Predicate> void onNewValueCallBack(Predicate &&cb) {
-    this->value_->onNewValueCallBack(std::forward<Predicate>(cb));
-  }
-
-  /**
-   * @brief forward to ValueTyped::onNewExceptionCallBack(...) of the value
-   * wrapped by this handler.
-   */
-  template <typename Predicate> void onNewExceptionCallBack(Predicate &&cb) {
-    this->value_->onNewExceptionCallBack(std::forward<Predicate>(cb));
-  }
+  Handler(Handler &&) = default;
+  Handler &operator=(Handler &&) = default;
 
 protected:
-  NodeHandler(const std::optional<std::string> &label,
-              const std::shared_ptr<ValueTyped<T>> &value)
-      : detail::ValueAware<T>{value}, label_(label) {}
-
-  NodeHandler(const std::optional<std::string> &label,
-              const detail::ValueAware<T> &o)
-      : detail::ValueAware<T>{o}, label_(label) {}
+  Handler(FlowBase &flow, NodeBasePtr<T> node) : flow_ref_{flow}, node_{node} {}
 
 private:
-  const std::optional<std::string> label_;
+  FlowBase &flow_ref_;
+  NodeBasePtr<T> node_;
 };
 
-template <typename T> class SourceHandler : public NodeHandler<T> {
-  friend class detail::HandlerMaker;
-  friend class detail::HandlerFinder;
+template <typename T> class HandlerSource : public Handler<T> {
+  friend class HandlerMaker;
+  friend class HandlerFinder;
 
 public:
-  /**
-   * @brief update the value stored by the wrapped source, using the passed
-   * arguments.
-   *
-   * Attention!! This method actually updates only the wrapped source. In order
-   * to trigger the update of all the dependant nodes, you need to do it from
-   * the containing network by calling Updater::update().
-   */
-  template <typename... Args> void update(Args... args) {
-    this->value_->update([&args...]() { return T{args...}; });
-  }
+  void update(T value);
 
-protected:
-  using NodeHandler<T>::NodeHandler;
-};
+private:
+  HandlerSource(UpdateRequiredAware &flow, std::shared_ptr<Source<T>> source)
+      : Handler<T>{flow, source}, update_ref_{flow}, source_{source} {}
 
-enum class FlowStatus { IDLE, UPDATING };
-
-namespace detail {
-template <typename T>
-class LabelsMap : public std::unordered_map<std::string, T> {
-public:
-  LabelsMap() = default;
-
-  template <typename... Args>
-  void emplaceWithCheck(const std::string &label, Args &&...args) {
-    auto it = this->find(label);
-    if (it != this->end()) {
-      throw Error{"An element with label: ", label, " , already exists"};
-    }
-    this->emplace(label, std::forward<Args>(args)...);
-  }
+  std::shared_ptr<Source<T>> source_;
+  UpdateRequiredAware &update_ref_;
 };
 
 class FlowBase {
 public:
-  FlowBase(FlowBase &) = delete;
-  FlowBase &operator=(FlowBase &) = delete;
-
   virtual ~FlowBase() = default;
+
+  FlowBase(const FlowBase &) = delete;
+  FlowBase &operator=(const FlowBase &) = delete;
+
+  FlowBase(FlowBase &&) = delete;
+  FlowBase &operator=(FlowBase &&) = delete;
 
   /**
    * @return the number of sources + nodes stored in this network
    */
   std::size_t size() const {
-    std::scoped_lock lock(flow_mtx_);
-    return sources_all_.size() + nodes_all_.size();
+    std::scoped_lock guard(flow_lock_);
+    return sources_.size() + nodes_.size();
   }
   /**
    * @return the number of sources stored in this network
    */
   std::size_t sources_size() const {
-    std::scoped_lock lock(flow_mtx_);
-    return sources_all_.size();
+    std::scoped_lock guard(flow_lock_);
+    return sources_.size();
   }
   /**
    * @return the number of nodes stored in this network
    */
   std::size_t nodes_size() const {
-    std::scoped_lock lock(flow_mtx_);
-    return nodes_all_.size();
+    std::scoped_lock guard(flow_lock_);
+    return nodes_.size();
   }
-
-  /**
-   * @return Steals all the sources and nodes of the passed network. Clearly,
-   * all nodes and sources stop to exist in the passed network and are entirely
-   * migrated to this one.
-   */
-  void absorb(FlowBase &o);
 
 protected:
   FlowBase() = default;
 
-  mutable std::mutex flow_mtx_;
+  mutable std::mutex flow_lock_;
 
-  // sources
-  std::list<std::shared_ptr<Value>> sources_all_;
-  LabelsMap<std::shared_ptr<Value>> sources_labeled_;
+  std::unordered_map<std::string, FlowElementPtr> labeled_elements_;
 
-  // nodes
-  std::list<NodePtr> nodes_all_;
-  LabelsMap<NodePtr> nodes_labeled_;
+  std::vector<FlowElementPtr> sources_;
+  std::unordered_map<FlowElement *, std::string> sources_to_labels_;
 
-  // sources and nodes
-  std::set<const Value *> values_all_;
+  std::vector<FlowElementResettablePtr> nodes_;
+  std::unordered_map<FlowElementResettable *, std::string> nodes_to_labels_;
 };
 
-class HandlerFinder : public virtual FlowBase {
+class UpdateRequiredAware : public virtual FlowBase {
+  template <typename T> friend class HandlerSource;
+
+protected:
+  void propagateSourceUpdate(const FlowElement &source);
+
+  std::unordered_set<FlowElementResettable *> updatePending_;
+};
+
+class HandlerFinder : public virtual UpdateRequiredAware {
 public:
   /**
    * @return An handler wrapping an already generated source, if this one was
    * created with the passed label and has the specified type.
    */
   template <typename T>
-  SourceHandler<T> findSource(const std::string &label) const {
-    LabelsMap<std::shared_ptr<Value>>::const_iterator it;
-    {
-      std::lock_guard<std::mutex> lock(flow_mtx_);
-      it = sources_labeled_.find(label);
-      if (it == sources_labeled_.end()) {
-        throw Error{"Not able to find source named: ", label};
-      }
-    }
-    auto as_typed_source = std::dynamic_pointer_cast<ValueTyped<T>>(it->second);
-    if (as_typed_source == nullptr) {
-      throw Error{"Source named: ", label, " is not of the requested type"};
-    }
-    return SourceHandler<T>{label, as_typed_source};
+  HandlerSource<T> findSource(const std::string &label) const {
+    return find_<T, HandlerSource>(label);
   }
 
   /**
    * @return An handler wrapping an already generated node, if this one was
    * created with the passed label and has the specified type.
    */
-  template <typename T>
-  NodeHandler<T> findNode(const std::string &label) const {
-    LabelsMap<NodePtr>::const_iterator it;
-    {
-      std::lock_guard<std::mutex> lock(flow_mtx_);
-      it = nodes_labeled_.find(label);
-      if (it == nodes_labeled_.end()) {
-        throw Error{"Not able to find node named: ", label};
-      }
-    }
-    auto as_typed_node =
-        std::dynamic_pointer_cast<detail::ValueAware<T>>(it->second);
-    if (as_typed_node == nullptr) {
-      throw Error{"Node named: ", label, " is not of the requested type"};
-    }
-    return NodeHandler<T>{label, *as_typed_node};
-  }
-};
-
-class HandlerMaker : public virtual FlowBase {
-public:
-  template <typename T>
-  SourceHandler<T>
-  makeSource(const std::optional<std::string> &label = std::nullopt) {
-    using SourceT = ValueTypedWithErrors<T>;
-    std::shared_ptr<SourceT> source = std::make_shared<SourceT>();
-    {
-      std::lock_guard<std::mutex> lock(flow_mtx_);
-      if (label.has_value()) {
-        sources_labeled_.emplaceWithCheck(label.value(), source);
-      }
-      sources_all_.push_back(source);
-      values_all_.emplace(source.get());
-    }
-    return SourceHandler<T>{label, source};
-  }
-
-  template <typename T, typename... Deps, typename EvalPredicate>
-  NodeHandler<T> makeNode(EvalPredicate &&predicate,
-                          const std::optional<std::string> &label,
-                          const NodeHandler<Deps> &...deps) {
-    auto val = std::make_unique<ValueTypedWithErrors<T>>();
-    return this->makeNodeWithMonitoredException<T, Deps...>(
-        std::forward<EvalPredicate>(predicate), std::move(val), label, deps...);
-  }
-
-  template <typename T, typename... Deps, typename EvalPredicate>
-  NodeHandler<T> makeNodeWithMonitoredException(
-      EvalPredicate &&predicate,
-      std::unique_ptr<ValueTyped<T>> value_with_monitored_exceptions,
-      const std::optional<std::string> &label,
-      const NodeHandler<Deps> &...deps) {
-    using NodeT = Node<T, Deps...>;
-    std::shared_ptr<ValueTyped<T>> value_catched;
-    value_catched.reset(value_with_monitored_exceptions.release());
-    std::shared_ptr<NodeT> node = std::make_shared<NodeT>(
-        std::forward<EvalPredicate>(predicate), value_catched);
-    {
-      std::lock_guard<std::mutex> lock(flow_mtx_);
-      this->bind<0, NodeT, Deps...>(*node, deps...);
-      if (label.has_value()) {
-        nodes_labeled_.emplaceWithCheck(label.value(), node);
-      }
-      nodes_all_.push_back(node);
-      values_all_.emplace(value_catched.get());
-    }
-    return NodeHandler<T>{
-        label,
-        *node,
-    };
+  template <typename T> Handler<T> findNode(const std::string &label) const {
+    return find_<T, Handler>(label);
   }
 
 private:
-  template <std::size_t N, typename NodeT, typename Dep, typename... Deps>
-  void bind(NodeT &subject, const NodeHandler<Dep> &first,
-            const NodeHandler<Deps> &...others) {
-    this->bind<N, NodeT, Dep>(subject, first);
-    this->bind<N + 1, NodeT, Deps...>(subject, others...);
-  }
-
-  template <std::size_t N, typename NodeT, typename Dep>
-  void bind(NodeT &subject, const NodeHandler<Dep> &dep) {
-    if (this->values_all_.find(&dep.getValue()) == this->values_all_.end()) {
-      throw Error{"Found invalid dependency when generating a new node"};
-    }
-    subject.template bind<N, Dep>(dep.getValue());
-  }
+  template <typename T, template <typename U> class HandlerU>
+  HandlerU<T> find_(const std::string &label) const;
 };
 
-class Updater : public virtual FlowBase {
+class HandlerMaker : public virtual UpdateRequiredAware {
 public:
-  FlowStatus status() const { return status_.load(); }
+  template <typename T>
+  HandlerSource<T> makeSource(T initial_value, const std::string &label = "");
+
+  template <typename T, typename... As, typename Pred>
+  Handler<T> makeNode(
+      Pred &&lambda, const Handler<As> &...deps, const std::string &label = "",
+      std::function<void(const T &)> valueCB = std::function<void(const T &)>{},
+      std::function<void(const std::exception &)> errCB =
+          std::function<void(const std::exception &)>{});
+
+  template <typename T, typename... As, typename... ErrorsT, typename Pred>
+  Handler<T> makeNodeWithErrorsCB(
+      Pred &&lambda, const Handler<As> &...deps,
+      ValueCallBacks<T, ErrorsT...> cb = ValueCallBacks<T, ErrorsT...>{},
+      const std::string &label = "");
+
+  enum class OnNewNodePolicy { IMMEDIATE_UPDATE, DEFERRED_UPDATE };
+  auto onNewNodePolicy() const { return policy.load(); }
+  void setOnNewNodePolicy(OnNewNodePolicy p) { policy.store(p); }
+
+private:
+  template <std::size_t Index, typename TupleT, typename Afront,
+            typename... Arest>
+  void packDeps(TupleT &recipient, const Handler<Afront> &dep_front,
+                const Handler<Arest> &...dep_rest);
+
+  std::atomic<OnNewNodePolicy> policy{OnNewNodePolicy::IMMEDIATE_UPDATE};
+};
+
+enum class FlowStatus { UPDATE_NOT_REQUIRED, UPDATE_REQUIRED, UPDATING };
+
+class Updater : public virtual UpdateRequiredAware {
+public:
+  FlowStatus status() const {
+    if (updating_.load(std::memory_order_acquire)) {
+      return FlowStatus::UPDATING;
+    }
+    std::scoped_lock guard(flow_lock_);
+    return updatePending_.empty() ? FlowStatus::UPDATE_NOT_REQUIRED
+                                  : FlowStatus::UPDATE_REQUIRED;
+  }
 
   /**
    * @brief triggers the update of all the nodes in the network.
-   * Changes should happen as a consequence of having changed before nay
+   * Changes should happen as a consequence of having changed before any
    * source(s) value(s).
    */
   void update();
 
   /**
-   * @return true in case any node in the network needs an update, i.e. calling
-   * update() would actually change at least one node in the network.
-   */
-  bool isUpdateRequired() const;
-
-  /**
    * @brief sets the number of threads to use for the next network update, i.e.
    * when update() will be called again.
    */
-  void setThreads(const std::size_t threads);
-
-  /**
-   * @brief resets all sources/nodes in the network, leaving them all in an
-   * unset state.
-   */
-  void reset();
+  void setThreads(std::size_t threads) {
+    if (threads == 0) {
+      throw Error{"Specify at least one thread for the update"};
+    }
+    threads_.store(threads, std::memory_order_release);
+  }
 
 private:
-  mutable std::mutex update_mtx_;
-  std::atomic<FlowStatus> status_ = FlowStatus::IDLE;
+  std::unordered_set<FlowElementResettable *>
+  updateSingle(std::vector<FlowElementResettable *> open);
+
+  std::unordered_set<FlowElementResettable *>
+  updateMulti(std::unordered_set<FlowElementResettable *> open,
+              std::size_t threads_to_use);
+
   std::atomic<std::size_t> threads_ = 1;
+  std::atomic_bool updating_{false};
 };
-} // namespace detail
 
 struct ValueSnapshot {
+  bool has_value;
   std::size_t id;
-  std::optional<std::string> label;
-  std::size_t epoch;
-  ValueStatus status;
+  std::size_t generation;
+  std::string label;
   std::string value_serialization;
-  std::optional<std::vector<std::size_t>>
-      dependencies; // actually, the id(s) of the dependencies
+  // the Ids of the node whose result depend on this one
+  std::vector<std::size_t> dependants;
 };
 using FlowSnapshot = std::vector<ValueSnapshot>;
 
-namespace detail {
 class StructureExporter : public virtual FlowBase {
 public:
   /**
    * @return a serialization of the entire network
    */
-  FlowSnapshot getSnapshot(bool serializeNodeValues = false) const;
+  FlowSnapshot snapshot() const;
 };
-} // namespace detail
 
-class Flow final : public detail::HandlerFinder,
-                   public detail::HandlerMaker,
-                   public detail::Updater,
-                   public detail::StructureExporter {
+class Flow final : public HandlerFinder,
+                   public HandlerMaker,
+                   public Updater,
+                   public StructureExporter {
 public:
   Flow() = default;
-
-  Flow(Flow &&o) { this->absorb(o); };
-  Flow &operator=(Flow &&) = delete;
 };
+
 } // namespace flw
